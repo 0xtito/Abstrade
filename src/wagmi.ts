@@ -1,5 +1,9 @@
 // rainbow
-import { rainbowWallet, metaMaskWallet } from "@rainbow-me/rainbowkit/wallets";
+import {
+  rainbowWallet,
+  metaMaskWallet,
+  coinbaseWallet,
+} from "@rainbow-me/rainbowkit/wallets";
 import {
   connectorsForWallets,
   RainbowKitProvider,
@@ -7,13 +11,17 @@ import {
   getWalletConnectConnector,
   getDefaultWallets,
 } from "@rainbow-me/rainbowkit";
+import { SafeAuthKitConnector } from "./rainbowSafeAuthKitConnector";
 // wagmi
 import { Connector, ConnectorData, createClient, configureChains } from "wagmi";
 import { Chain } from "wagmi";
 import { jsonRpcProvider } from "@wagmi/core/providers/jsonRpc";
 import { goerli, mainnet, gnosisChiado, gnosis } from "wagmi/chains";
 import { publicProvider } from "wagmi/providers/public";
-import { MetaMaskConnector } from "@wagmi/core/connectors/metaMask";
+import { CoinbaseWalletConnector } from "wagmi/connectors/coinbaseWallet";
+import { InjectedConnector } from "wagmi/connectors/injected";
+import { MetaMaskConnector } from "wagmi/connectors/metaMask";
+import { SafeConnector } from "wagmi/connectors/safe";
 // web3auth
 import { Web3AuthConnector } from "@web3auth/web3auth-wagmi-connector";
 import { OpenloginAdapter } from "@web3auth/openlogin-adapter";
@@ -24,12 +32,13 @@ import {
   WALLET_ADAPTERS,
 } from "@web3auth/base";
 // gnosis safe auth kit
+import { SafeAppProvider } from "@safe-global/safe-apps-provider";
 import {
   SafeAuthKit,
   SafeAuthProviderType,
   SafeAuthConfig,
 } from "@safe-global/auth-kit";
-import { SafeConnector } from "@wagmi/connectors/safe";
+// import { SafeConnector } from "@wagmi/connectors/safe";
 
 /**
  * Currently messing around with wagmi, SafeAuthKit/web3authkit, and rainbowkit
@@ -46,37 +55,25 @@ import { SafeConnector } from "@wagmi/connectors/safe";
 // and Gnosis Mainnet
 // https://rpc.gnosis.gateway.fm
 
-const { chains, provider, webSocketProvider } = configureChains(
+// jsonRpcProvider({
+//   rpc: (chain) => ({
+//     http:
+//       chain.id == 100
+//         ? "https://rpc.gnosis.gateway.fm"
+//         : "https://rpc.chiado.gnosis.gateway.fm",
+//   }),
+// }),
+
+const { chains, provider } = configureChains(
   [gnosis, gnosisChiado],
-  [
-    jsonRpcProvider({
-      rpc: (chain) => ({
-        http:
-          chain.id == 100
-            ? "https://rpc.gnosis.gateway.fm"
-            : "https://rpc.chiado.gnosis.gateway.fm",
-      }),
-    }),
-    publicProvider(),
-  ]
+  [publicProvider()]
 );
+
+// console.log(provider);
 
 // Docs (https://docs.gnosis-safe.io/learn/safe-core-account-abstraction-sdk/auth-kit) say that
 // modalCOnfig is optional, but it is not optional in the typescript definition
 // can add it ourselves if need be or skip modalConfig
-export async function getSafeAuthKit() {
-  const safeAuthKit = await SafeAuthKit.init(SafeAuthProviderType.Web3Auth, {
-    chainId: chains[0].id.toString(16),
-    authProviderConfig: {
-      rpcTarget: chains[0].rpcUrls.default.http[0],
-      clientId: process.env.NEXT_PUBLIC_WEB3AUTH_CLIENT_ID as string,
-      network: "testnet",
-      theme: "dark",
-    },
-  });
-
-  return safeAuthKit;
-}
 
 // Not needed with SafeAuthKit, but keeping for now
 const web3AuthCore = new Web3AuthCore({
@@ -116,16 +113,25 @@ const openloginAdapterInstance = new OpenloginAdapter({
 //   appName: "Scaling Ethereum 2023",
 //   chains,
 // });
+// SafeAuthKitConnector({ chains }),
+
 const connectors = connectorsForWallets([
   {
-    groupName: "Wallets",
-    wallets: [rainbowWallet({ chains }), metaMaskWallet({ chains })],
+    groupName: "EOA Wallets",
+    wallets: [
+      rainbowWallet({ chains }),
+      metaMaskWallet({ chains }),
+      SafeAuthKitConnector({ chains, options: { debug: true } }),
+      // coinbaseWallet({ chains }),
+    ],
   },
 ]);
 // const connectors = [
 //   new SafeConnector({ chains }),
 //   new MetaMaskConnector({ chains }),
 // ];
+
+// const connector = new MetaMaskConnector({ chains });
 
 export const client = createClient({
   autoConnect: true,
