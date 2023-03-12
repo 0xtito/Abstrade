@@ -109,11 +109,24 @@ export class SafeAAConnector extends Connector<
   }> {
     return new Promise(async (resolve, reject) => {
       try {
+        const _chainId = await this.getChainId();
+        const chain = this.chains.find((c) => c.id === _chainId);
+        if (!chain) {
+          throw new ChainNotConfiguredError({
+            chainId: _chainId,
+            connectorId: this.id,
+          });
+        }
+
+        const rpcUrl = chain.rpcUrls.default.http[0];
+        console.log(rpcUrl);
+        // rpcTarget: this.chains[0].rpcUrls.default.http[0],
+
         const safeAuth = await SafeAuthKit.init(SafeAuthProviderType.Web3Auth, {
-          chainId: hexValue(this.chains[0].id),
+          chainId: hexValue(_chainId),
           txServiceUrl: "https://safe-transaction-goerli.safe.global",
           authProviderConfig: {
-            rpcTarget: this.chains[0].rpcUrls.default.http[0],
+            rpcTarget: chain.rpcUrls.default.http[0],
             clientId: process.env.NEXT_PUBLIC_WEB3AUTH_CLIENT_ID as string,
             network: "testnet",
             theme: "dark",
@@ -151,8 +164,8 @@ export class SafeAAConnector extends Connector<
           resolve({
             account: await this.getAccount(),
             chain: {
-              id: await this.getChainId(),
-              unsupported: false,
+              id: _chainId,
+              unsupported: this.isChainUnsupported(_chainId),
             },
             provider: this.#provider as ethers.providers.Web3Provider,
           });
@@ -239,6 +252,10 @@ export class SafeAAConnector extends Connector<
         reject(error);
       }
     });
+  }
+
+  protected isChainUnsupported(chainId: number): boolean {
+    return !this.chains.find((c) => c.id === chainId);
   }
   protected onAccountsChanged: (accounts: `0x${string}`[]) => void;
   protected onChainChanged: (chainId: number | string) => void;
