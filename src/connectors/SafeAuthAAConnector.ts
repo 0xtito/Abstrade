@@ -26,7 +26,7 @@ import { getAddress, hexValue } from "ethers/lib/utils.js";
  * @info Trying to change the return SafeAppProvider to a JsonRpcSigner, replace back if needed
  * @todo Figure out the source of the error "Uncaught (in promise) Error: method must be string" when trying to connect to the Safe AA Wallet
  */
-export class SafeAAConnector extends Connector<
+export class SafeAuthAAConnector extends Connector<
   ethers.providers.Web3Provider,
   SafeOpts | undefined,
   providers.JsonRpcSigner
@@ -100,6 +100,7 @@ export class SafeAAConnector extends Connector<
 
   connect({ chainId }: { chainId?: number }): Promise<{
     account: `0x${string}`;
+    kit: SafeAuthKit;
     chain: {
       id: number;
       unsupported: boolean;
@@ -109,8 +110,11 @@ export class SafeAAConnector extends Connector<
   }> {
     return new Promise(async (resolve, reject) => {
       try {
-        const _chainId = await this.getChainId();
-        const chain = this.chains.find((c) => c.id === _chainId);
+        const _chainId = chainId ? chainId : await this.getChainId();
+
+        let chain: Chain | undefined = this.chains.find(
+          (chain) => chain.id === _chainId
+        );
         if (!chain) {
           throw new ChainNotConfiguredError({
             chainId: _chainId,
@@ -123,7 +127,7 @@ export class SafeAAConnector extends Connector<
         // rpcTarget: this.chains[0].rpcUrls.default.http[0],
 
         const safeAuth = await SafeAuthKit.init(SafeAuthProviderType.Web3Auth, {
-          chainId: hexValue(_chainId),
+          chainId: hexValue(chain.id),
           txServiceUrl: "https://safe-transaction-goerli.safe.global",
           authProviderConfig: {
             rpcTarget: chain.rpcUrls.default.http[0],
@@ -141,28 +145,12 @@ export class SafeAAConnector extends Connector<
           this.#provider = new ethers.providers.Web3Provider(
             safeAuth.getProvider() as ethers.providers.ExternalProvider
           );
-          console.log(this.#provider);
-          console.log(safeAuth);
-          const signer = this.#provider.getSigner();
-          console.log(signer);
-
-          console.log(await this.getAccount());
-          console.log(await this.getChainId());
-
-          // this.#provider = this.#safeAuth.getProvider();
-          // await this.#safeAuth.signIn();
-          // this.#provider = new ethers.providers.Web3Provider(
-          //   this.#safeAuth.getProvider() as ethers.providers.ExternalProvider
-          // );
-          // console.log(this.#provider);
-          // console.log(this.#safeAuth);
           // const signer = this.#provider.getSigner();
           // console.log(signer);
 
-          // console.log(await this.getAccount());
-          // console.log(await this.getChainId());
           resolve({
             account: await this.getAccount(),
+            kit: safeAuth,
             chain: {
               id: _chainId,
               unsupported: this.isChainUnsupported(_chainId),

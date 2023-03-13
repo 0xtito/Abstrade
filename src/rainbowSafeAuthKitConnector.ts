@@ -13,7 +13,7 @@ import { Connector } from "wagmi";
 import { RainbowWalletOptions } from "@rainbow-me/rainbowkit/dist/wallets/walletConnectors/rainbowWallet/rainbowWallet";
 import { Opts } from "@safe-global/safe-apps-sdk/dist/src/sdk";
 
-import { SafeAAConnector } from "./types/SafeAuthAAConnector";
+import { SafeAuthAAConnector } from "./connectors";
 
 type SafeConnectorOptions = Opts & {
   /**
@@ -44,7 +44,7 @@ export const SafeAuthKitConnector = ({ chains }: SafeWalletOptions): Wallet => {
     iconUrl: "https://picsum.photos/200",
     iconBackground: "#0c2f78",
     createConnector: () => {
-      const connector = new SafeAAConnector({
+      const connector = new SafeAuthAAConnector({
         chains,
         options: {
           debug: true,
