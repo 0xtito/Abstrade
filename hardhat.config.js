@@ -12,13 +12,10 @@ module.exports = {
       },
     },
   },
-  defaultNetwork: "goerli",
+  
   networks: {
     hardhat: {
-      forking: {
-        url: process.env.MUMBAI_URL,
-        blockNumber: 16521526,
-      },
+
     },
   },
   paths: {
