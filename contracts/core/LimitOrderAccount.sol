@@ -6,11 +6,13 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./ILimitOrderFiller.sol";
+// import "../eth-Infinitism-AA/samples/SimpleAccount.sol";
 
-contract LimitOrderSCW is ReentrancyGuard {
+// TODO inherit from 4337 simple account
+contract LimitOrderAccount is ReentrancyGuard {
     using SafeMath for uint256;
 
-    event NewLimitOrder(
+    event UpdateLimitOrder(
         address indexed tokenOut,
         address indexed tokenIn,
         uint256 indexed expiry,
@@ -34,68 +36,79 @@ contract LimitOrderSCW is ReentrancyGuard {
     mapping(uint256 => LimitOrder) public limitOrders;
 
     // takes array of limit orders, updates state and emits event
-    function createOrder(
+    // if _id = 0, new order will be created, if _id matches an existing order
+
+    // TODO gate to owner
+    // TODO move this function to logic contract to be delegate called by SCW
+    // take in array of limit orders? No, leave single and send array of calls as SCW
+    function updateLimitOrders(
         address _tokenOut,
         address _tokenIn,
         uint256 _expiry,
+        uint256 _id,
         uint256 _amountOut,
         uint256 _rate
     ) external {
-        limitOrders[idCounter] = LimitOrder(
+        if(_id == 0){
+            //create new limit order and increment counter
+            _id = idCounter;
+            idCounter++;
+        } 
+        require (limitOrders[_id].id != 0, "invalid _id");
+
+        limitOrders[_id] = LimitOrder(
             _tokenOut,
             _tokenIn,
             _expiry,
-            idCounter,
+            _id,
             _amountOut,
             _rate
         );
-        idCounter++;
-        emit NewLimitOrder(
+        
+        emit UpdateLimitOrder(
             _tokenOut,
             _tokenIn,
             _expiry,
-            idCounter,
+            _id,
             _amountOut,
             _rate
         );
     }
 
-    // similar to flashLoan() of Aave's LendingPool.sol. Allows full or partial fill
+    // external smart contract calls this function to fill this contracts limit order. 
+    // similar to flashLoan() of Aave's LendingPool.sol. Allows full or partial fill.
     function fillLimitOrder(
         uint256 _orderId,
         address _filler,
-        uint256 _amountOut,
+        uint256 _fillAmount,
         bytes memory _params
     ) external nonReentrant {
         //verfiy fillOrder parameters
         LimitOrder storage order = limitOrders[_orderId];
         require(limitOrders[_orderId].id > 0, "_orderId does not exist");
         require(order.expiry > block.timestamp, "order is expired");
-        require(order.amountOut >= _amountOut, "_amountOut greater than order");
+        require(order.amountOut >= _fillAmount, "_fillAmount greater than order");
 
         //require account has sufficient balance
         uint256 tokenOutBalance = IERC20(order.tokenOut).balanceOf(
             address(this)
         );
-        require(tokenOutBalance >= _amountOut, "insufficient account funds");
+        require(tokenOutBalance >= _fillAmount, "insufficient account funds");
 
-        //calculate required amount of tokenIn to receive
+        //store tokenIn balance for checking later
         uint256 tokenInBalanceBefore = IERC20(order.tokenIn).balanceOf(
             address(this)
         );
-        uint256 amountIn = _amountOut.mul(order.rate).div(1e6);
+        //calculate required amount of tokenIn to receive
+        uint256 amountIn = _fillAmount.mul(order.rate).div(1e6);
 
         //update order state
-        if (order.amountOut == _amountOut) {
-            //close order
-            order.expiry = 1;
-            order.amountOut = 0;
-        } else {
-            order.amountOut -= _amountOut;
-        }
+        order.amountOut -= _fillAmount;
+        //if order is full, set expiry to 0 to close order
+        if(order.amountOut == 0) order.expiry = 0;
 
         //transfer OrderAmounts.amountOut of tokenOut to receiver
-        IERC20(order.tokenOut).transfer(_filler, _amountOut);
+        IERC20(order.tokenOut).transfer(_filler, _fillAmount);
 
         //call filler's callback
         ILimitOrderFiller(_filler).executeOperation(
@@ -114,7 +127,7 @@ contract LimitOrderSCW is ReentrancyGuard {
             "insufficient tokenIn received"
         );
 
-        emit NewLimitOrder(
+        emit UpdateLimitOrder(
             order.tokenOut,
             order.tokenIn,
             order.expiry,
