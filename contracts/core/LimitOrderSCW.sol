@@ -83,7 +83,7 @@ contract LimitOrderSCW is ReentrancyGuard {
         uint256 tokenInBalanceBefore = IERC20(order.tokenIn).balanceOf(
             address(this)
         );
-        uint256 amountIn = _amountOut.mul(order.rate).div(1e6);
+        uint256 amountIn = _amountOut.mul(order.rate).div(1e18);
 
         //update order state
         if (order.amountOut == _amountOut) {
