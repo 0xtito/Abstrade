@@ -4,7 +4,7 @@ require("dotenv").config();
 
 module.exports = {
   solidity: {
-    version: "^0.8.0",
+    version: "0.8.17",
     settings: {
       optimizer: {
         enabled: true,
@@ -12,13 +12,21 @@ module.exports = {
       },
     },
   },
-  
+  defaultNetwork: "polygonMumbai",
   networks: {
     hardhat: {
-
     },
+    polygonMumbai: {
+      url: process.env.MUMBAI_URL,
+      accounts: [process.env.PRIVATE_KEY],
+    }
   },
+  etherscan: {
+    apiKey:  {
+      polygonMumbai: process.env.POLYGONSCAN_API_KEY 
+  }
+},
   paths: {
     artifacts: "./src/artifacts",
   },
-};
+}
