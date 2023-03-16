@@ -17,7 +17,8 @@ import { MagnifyingGlassIcon } from "@heroicons/react/20/solid";
 import Image from "next/image";
 
 import { WalletDropDown, Divider } from "../components";
-import AbstradeLogo from "../static/images/abstrade_logo_light.png";
+// import AbstradeLogo from "../static/images/abstrade_logo_light.png";
+import AbstradeLogo from "../static/images/abstrade-v2-light.png";
 
 const navigation = [
   { name: "Home", href: "#", icon: HomeIcon, current: false },
@@ -186,6 +187,7 @@ export function DashboardLayout(props: DashboardLayoutProps) {
           <div className="flex flex-grow flex-col overflow-y-auto border-r border-gray-200 bg-white">
             <div className="flex flex-shrink-0 items-center px-4">
               <Image
+                height={200}
                 className="h-auto w-auto"
                 src={AbstradeLogo}
                 alt="Abstrade"

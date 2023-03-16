@@ -13,7 +13,8 @@ import { Connector } from "wagmi";
 import { RainbowWalletOptions } from "@rainbow-me/rainbowkit/dist/wallets/walletConnectors/rainbowWallet/rainbowWallet";
 import { Opts } from "@safe-global/safe-apps-sdk/dist/src/sdk";
 
-import { SafeAuthAAConnector } from "./connectors";
+// import { SafeAuthAAConnector } from "./connectors/TestSafeAuthAAConnector";
+import { SafeAuthAAConnector } from "./connectors/_SafeAuthAAConnector";
 
 type SafeConnectorOptions = Opts & {
   /**

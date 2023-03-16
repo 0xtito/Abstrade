@@ -13,13 +13,13 @@ function App({ Component, pageProps }: AppProps) {
   React.useEffect(() => setMounted(true), []);
   return (
     <WagmiConfig client={client}>
-      <RainbowKitProvider chains={chains}>
-        <NextHead>
-          <title>My wagmi + RainbowKit App</title>
-        </NextHead>
+      {/* <RainbowKitProvider chains={chains}> */}
+      <NextHead>
+        <title>My wagmi + RainbowKit App</title>
+      </NextHead>
 
-        {mounted && <Component {...pageProps} />}
-      </RainbowKitProvider>
+      {mounted && <Component {...pageProps} />}
+      {/* </RainbowKitProvider> */}
     </WagmiConfig>
   );
 }
