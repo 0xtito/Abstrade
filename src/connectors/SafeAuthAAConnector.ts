@@ -19,7 +19,8 @@ import {
 import { getAddress, hexValue } from "ethers/lib/utils.js";
 
 /**
- * Custon Connector for [Safe AA Wallet](https://docs.gnosis-safe.io/learn/safe-core-account-abstraction-sdk)
+ * Custon Connector for [Safe Auth Kit Wallet](https://docs.gnosis-safe.io/learn/safe-core-account-abstraction-sdk)
+ * @note THIS IS NOT A SMART ACCOUNT WALLET (YET)
  * @see {@link https://docs.gnosis-safe.io/learn/safe-core-account-abstraction-sdk/auth-kit}
  * @description This connector is used to connect to the Safe AA Wallet, but with a few modifications to let it work with wagmi
  * @info SafeConnector that is already in wagmi wont work with the Safe AA Wallet
@@ -34,9 +35,9 @@ export class SafeAuthAAConnector extends Connector<
   readonly id = "safeAA";
   readonly name = "Safe AA";
   readonly ready: boolean;
-  // #safeAuth: SafeAuthKit;
+  safeAuth: Promise<SafeAuthKit>;
 
-  #provider?:
+  provider?:
     | ethers.providers.ExternalProvider
     | ethers.providers.JsonRpcProvider
     | null;
@@ -44,68 +45,49 @@ export class SafeAuthAAConnector extends Connector<
   constructor(config: { chains?: Chain[]; options: SafeOpts }) {
     super(config);
     this.ready = true;
-    this.onAccountsChanged = async (accounts: string[]) => {
-      this.emit("change", {
-        account: await this.getAccount(),
-        chain: {
-          id: await this.getChainId(),
-          unsupported: false,
-        },
-      });
-    };
-    this.onChainChanged = async (chainId: string | number) => {
-      this.emit("change", {
-        account: await this.getAccount(),
-        chain: {
-          id: await this.getChainId(),
-          unsupported: false,
-        },
-      });
-    };
-    this.onDisconnect = async () => {
-      this.emit("disconnect");
-    };
-
-    // this.#safeAuth = this.init().then((safeAuth) => safeAuth);
+    this.safeAuth = this.init();
   }
-  /**
-   * Testing init - not really needed, but might be useful
-   */
-  // async init(): Promise<SafeAuthKit> {
-  //   return new Promise(async (resolve, reject) => {
-  //     try {
-  //       const _safeAuth = await SafeAuthKit.init(
-  //         SafeAuthProviderType.Web3Auth,
-  //         {
-  //           chainId: hexValue(this.chains[0].id),
-  //           txServiceUrl: "https://safe-transaction-goerli.safe.global",
-  //           authProviderConfig: {
-  //             rpcTarget: this.chains[0].rpcUrls.default.http[0],
-  //             clientId: process.env.NEXT_PUBLIC_WEB3AUTH_CLIENT_ID as string,
-  //             network: "testnet",
-  //             theme: "dark",
-  //           },
-  //         }
-  //       );
-  //       if (!_safeAuth) {
-  //         throw new Error("Safe Auth not initialized");
-  //       }
-  //       return _safeAuth;
-  //     } catch (error) {
-  //       reject(error);
-  //     }
-  //   });
-  // }
-  // }
 
-  connect({ chainId }: { chainId?: number }): Promise<{
+  init(): Promise<SafeAuthKit> {
+    return new Promise(async (resolve, reject) => {
+      const _chainId = await this.getChainId();
+      let chain: Chain | undefined = this.chains.find(
+        (chain) => chain.id === _chainId
+      );
+
+      try {
+        const _safeAuth = await SafeAuthKit.init(
+          SafeAuthProviderType.Web3Auth,
+          {
+            chainId: hexValue(_chainId),
+            txServiceUrl: "https://safe-transaction-goerli.safe.global",
+            authProviderConfig: {
+              rpcTarget: chain
+                ? chain.rpcUrls.default.http[0]
+                : this.chains[0].rpcUrls.default.http[0],
+              clientId: process.env.NEXT_PUBLIC_WEB3AUTH_CLIENT_ID as string,
+              network: "testnet",
+              theme: "dark",
+            },
+          }
+        );
+        if (!_safeAuth) {
+          throw new Error("Safe Auth not initialized");
+        }
+        resolve(_safeAuth);
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  async connect({ chainId }: { chainId?: number } = {}): Promise<{
     account: `0x${string}`;
     kit: SafeAuthKit;
     chain: {
       id: number;
       unsupported: boolean;
     };
-    // provider: SafeAppProvider;
     provider: ethers.providers.Web3Provider;
   }> {
     return new Promise(async (resolve, reject) => {
@@ -122,40 +104,24 @@ export class SafeAuthAAConnector extends Connector<
           });
         }
 
-        const rpcUrl = chain.rpcUrls.default.http[0];
-        console.log(rpcUrl);
-        // rpcTarget: this.chains[0].rpcUrls.default.http[0],
+        const _safeAuth = await this.safeAuth;
+        await _safeAuth.signIn();
 
-        const safeAuth = await SafeAuthKit.init(SafeAuthProviderType.Web3Auth, {
-          chainId: hexValue(chain.id),
-          txServiceUrl: "https://safe-transaction-goerli.safe.global",
-          authProviderConfig: {
-            rpcTarget: chain.rpcUrls.default.http[0],
-            clientId: process.env.NEXT_PUBLIC_WEB3AUTH_CLIENT_ID as string,
-            network: "testnet",
-            theme: "dark",
-          },
-        });
-
-        if (!safeAuth) {
+        if (!_safeAuth) {
           throw new Error("Safe Auth not initialized");
         } else {
-          this.#provider = safeAuth.getProvider();
-          await safeAuth.signIn();
-          this.#provider = new ethers.providers.Web3Provider(
-            safeAuth.getProvider() as ethers.providers.ExternalProvider
+          this.provider = new ethers.providers.Web3Provider(
+            _safeAuth.getProvider() as ethers.providers.ExternalProvider
           );
-          // const signer = this.#provider.getSigner();
-          // console.log(signer);
 
           resolve({
             account: await this.getAccount(),
-            kit: safeAuth,
+            kit: await this.safeAuth,
             chain: {
               id: _chainId,
               unsupported: this.isChainUnsupported(_chainId),
             },
-            provider: this.#provider as ethers.providers.Web3Provider,
+            provider: this.provider as ethers.providers.Web3Provider,
           });
         }
       } catch (error) {
@@ -164,24 +130,38 @@ export class SafeAuthAAConnector extends Connector<
     });
   }
 
-  async disconnect(): Promise<void> {}
-  async getAccount(): Promise<`0x${string}`> {
-    try {
-      if (!this.#provider) {
-        throw new Error("Provider not initialized");
+  async disconnect(): Promise<void> {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const _safeAuth = await this.safeAuth;
+        await _safeAuth.signOut();
+        resolve();
+      } catch (error) {
+        reject(error);
       }
-      const ethersProvider = new ethers.providers.Web3Provider(
-        this.#provider as ethers.providers.ExternalProvider
-      );
-      const signer = ethersProvider.getSigner();
+    });
+  }
+  async getAccount(): Promise<`0x${string}`> {
+    return new Promise(async (resolve, reject) => {
+      try {
+        if (!this.provider) {
+          throw new Error("Provider not initialized");
+        }
+        // (await this.safeAuth).getProvider();
+        const ethersProvider = new ethers.providers.Web3Provider(
+          (
+            await this.safeAuth
+          ).getProvider() as ethers.providers.ExternalProvider
+        );
 
-      // Get user's Ethereum public address
-      const address = await signer.getAddress();
+        const signer = ethersProvider.getSigner();
+        const address = await signer.getAddress();
 
-      return address as `0x${string}`;
-    } catch (error) {
-      return error as any;
-    }
+        resolve(address as `0x${string}`);
+      } catch (error) {
+        reject(error);
+      }
+    });
   }
   getChainId(): Promise<number> {
     return new Promise((resolve, reject) => {
@@ -194,34 +174,38 @@ export class SafeAuthAAConnector extends Connector<
     });
   }
   async getProvider(): Promise<ethers.providers.Web3Provider> {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       try {
-        if (!this.#provider) {
-          this.#provider = new ethers.providers.Web3Provider(
-            this.#provider! as ethers.providers.ExternalProvider
+        if (!this.provider) {
+          const _safeAuth = await this.safeAuth;
+          this.provider = new ethers.providers.Web3Provider(
+            _safeAuth.getProvider() as ethers.providers.ExternalProvider
           );
         }
-        return this.#provider;
+        resolve(this.provider as ethers.providers.Web3Provider);
       } catch (error) {
-        return error;
+        reject(error);
       }
     });
   }
 
   async getSigner(): Promise<providers.JsonRpcSigner> {
-    try {
-      // const ethersProvider = new ethers.providers.Web3Provider(this.#provider);
-      const signer = (await this.getProvider()).getSigner();
+    return new Promise(async (resolve, reject) => {
+      try {
+        const signer = (await this.getProvider()).getSigner(
+          await this.getAccount()
+        );
 
-      return signer;
-    } catch (error) {
-      return error as any;
-    }
+        resolve(signer as providers.JsonRpcSigner);
+      } catch (error) {
+        return error as any;
+      }
+    });
   }
   isAuthorized(): Promise<boolean> {
     return new Promise((resolve, reject) => {
       try {
-        const isAuthorized = !!this.#provider;
+        const isAuthorized = !!this.provider;
         resolve(isAuthorized);
       } catch (error) {
         reject(error);
@@ -245,9 +229,29 @@ export class SafeAuthAAConnector extends Connector<
   protected isChainUnsupported(chainId: number): boolean {
     return !this.chains.find((c) => c.id === chainId);
   }
-  protected onAccountsChanged: (accounts: `0x${string}`[]) => void;
-  protected onChainChanged: (chainId: number | string) => void;
-  protected onDisconnect: () => void;
+  protected onAccountsChanged: (accounts: `0x${string}`[]) => void = async (
+    accounts: string[]
+  ) => {
+    this.emit("change", {
+      account: await this.getAccount(),
+      chain: {
+        id: await this.getChainId(),
+        unsupported: false,
+      },
+    });
+  };
+  protected onChainChanged: (chainId: number) => void = async (
+    chainId: number
+  ) => {
+    this.emit("change", {
+      account: await this.getAccount(),
+      chain: {
+        id: await this.getChainId(),
+        unsupported: false,
+      },
+    });
+  };
+  protected onDisconnect: () => void = async () => {
+    this.emit("disconnect");
+  };
 }
-
-// export { SafeAuthAAConnector };
