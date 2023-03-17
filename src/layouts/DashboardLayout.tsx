@@ -12,6 +12,8 @@ import {
   CurrencyDollarIcon,
   CogIcon,
   ArrowRightOnRectangleIcon,
+  ChevronRightIcon,
+  ChevronLeftIcon,
 } from "@heroicons/react/24/outline";
 import { MagnifyingGlassIcon } from "@heroicons/react/20/solid";
 import Image from "next/image";
@@ -19,15 +21,15 @@ import Image from "next/image";
 import { WalletDropDown, Divider } from "../components";
 // import AbstradeLogo from "../static/images/abstrade_logo_light.png";
 import AbstradeLogo from "../static/images/abstrade-v2-light.png";
+import { BarNavItem, DashboardLayoutProps } from "../interfaces";
 
-const navigation = [
+const mainNavigation = [
   { name: "Home", href: "#", icon: HomeIcon, current: false },
   { name: "Dashboard", href: "#", icon: Squares2X2Icon, current: true },
   { name: "Place Orders", href: "#", icon: FolderIcon, current: false },
   { name: "Orders", href: "#", icon: CubeIcon, current: false },
   { name: "Fiat On-ramp", href: "#", icon: CurrencyDollarIcon, current: false },
 ];
-
 const userSettingsNav = [
   { name: "Settings", href: "#", icon: CogIcon, current: false },
   {
@@ -37,6 +39,9 @@ const userSettingsNav = [
     current: false,
   },
 ];
+const fullBarNav = mainNavigation.concat(userSettingsNav);
+console.log(fullBarNav);
+
 const userNavigation = [
   { name: "Your Profile", href: "#" },
   { name: "Settings", href: "#" },
@@ -47,16 +52,26 @@ function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
 }
 
-interface DashboardLayoutProps {
-  children: JSX.Element;
-}
-
 export function DashboardLayout(props: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [barNavigation, setBarNavigation] = useState(fullBarNav);
+  const [sidebarExpanded, setSidebarExpanded] = useState(true);
+
+  const handleSideBarToggle = (item: BarNavItem) => {
+    const newNav = barNavigation.map((_item) => {
+      _item.current = false;
+      if (item.name == _item.name) _item.current = true;
+      return _item;
+    });
+    console.log(newNav);
+    // item.current = true;
+    setBarNavigation(newNav);
+  };
 
   return (
     <Fragment>
       <div>
+        {/* mobile config */}
         <Transition.Root show={sidebarOpen} as={Fragment}>
           <Dialog
             as="div"
@@ -120,31 +135,43 @@ export function DashboardLayout(props: DashboardLayoutProps) {
                     <div>
                       {/* Items above Divider */}
                       <nav className="flex-1 space-y-1 px-2 pb-2">
-                        {navigation.map((item) => (
-                          <a
-                            key={item.name}
-                            href={item.href}
-                            className={classNames(
-                              item.current
-                                ? "bg-gray-100 text-gray-900"
-                                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
-                              "group flex items-center rounded-md px-2 py-2 text-sm font-medium"
-                            )}
-                          >
-                            <item.icon
+                        {barNavigation
+                          .filter(
+                            (item) =>
+                              userSettingsNav.findIndex(
+                                (_item) => _item.name == item.name
+                              ) > -1
+                          )
+                          .map((item) => (
+                            <a
+                              key={item.name}
+                              href={item.href}
                               className={classNames(
                                 item.current
-                                  ? "text-gray-500"
-                                  : "text-gray-400 group-hover:text-gray-500",
-                                "mr-3 h-6 w-6 flex-shrink-0"
+                                  ? "bg-gray-100 text-gray-900"
+                                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+                                "group flex items-center rounded-md px-2 py-2 text-sm font-medium"
                               )}
-                              aria-hidden="true"
-                            />
-                            {item.name}
-                          </a>
-                        ))}
+                            >
+                              <item.icon
+                                className={classNames(
+                                  item.current
+                                    ? "text-gray-500"
+                                    : "text-gray-400 group-hover:text-gray-500",
+                                  "mr-3 h-6 w-6 flex-shrink-0"
+                                )}
+                                aria-hidden="true"
+                              />
+                              {item.name}
+                            </a>
+                          ))}
                       </nav>
-                      <Divider />
+                      <Divider
+                        Icon={
+                          sidebarExpanded ? ChevronLeftIcon : ChevronRightIcon
+                        }
+                        setSidebarExpanded={setSidebarExpanded}
+                      />
                       {/* Items below Divider */}
                       <nav className="flex-1 space-y-1 p-2">
                         {userSettingsNav.map((item) => (
@@ -182,6 +209,8 @@ export function DashboardLayout(props: DashboardLayoutProps) {
           </Dialog>
         </Transition.Root>
 
+        {/* Make a sidebar that can expand, compress. Giving users more room to work with, helpful for our design as well*/}
+
         {/* Static sidebar for desktop */}
         <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
           <div className="flex flex-grow flex-col overflow-y-auto border-r border-gray-200 bg-white">
@@ -197,61 +226,84 @@ export function DashboardLayout(props: DashboardLayoutProps) {
               <div>
                 {/* Items above Divider */}
                 <nav className="flex-1 space-y-1 px-2 pb-2">
-                  {navigation.map((item) => (
-                    <a
-                      key={item.name}
-                      href={item.href}
-                      className={classNames(
-                        item.current
-                          ? "bg-gray-100 text-gray-900"
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
-                        "group flex items-center rounded-md px-2 py-2 text-sm font-medium"
-                      )}
-                    >
-                      <item.icon
+                  {barNavigation
+                    .filter(
+                      (fullBar_item) =>
+                        mainNavigation.findIndex((_item) => {
+                          console.log(_item.name, fullBar_item.name);
+                          return _item.name == fullBar_item.name;
+                        }) > -1
+                    )
+                    .map((item) => (
+                      <a
+                        key={item.name}
+                        href={item.href}
+                        onClick={() => handleSideBarToggle(item)}
                         className={classNames(
                           item.current
-                            ? "text-gray-500"
-                            : "text-gray-400 group-hover:text-gray-500",
-                          "mr-3 h-6 w-6 flex-shrink-0"
+                            ? "bg-gray-100 text-gray-900"
+                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+                          "group flex items-center rounded-md px-2 py-2 text-sm font-medium"
                         )}
-                        aria-hidden="true"
-                      />
-                      {item.name}
-                    </a>
-                  ))}
+                      >
+                        <item.icon
+                          className={classNames(
+                            item.current
+                              ? "text-gray-500"
+                              : "text-gray-400 group-hover:text-gray-500",
+                            "mr-3 h-6 w-6 flex-shrink-0"
+                          )}
+                          aria-hidden="true"
+                        />
+                        {item.name}
+                      </a>
+                    ))}
                 </nav>
-                <Divider />
+                <Divider
+                  Icon={sidebarExpanded ? ChevronLeftIcon : ChevronRightIcon}
+                  setSidebarExpanded={setSidebarExpanded}
+                />
                 {/* Items below Divider */}
                 <nav className="flex-1 space-y-1 p-2">
-                  {userSettingsNav.map((item) => (
-                    <a
-                      key={item.name}
-                      href={item.href}
-                      className={classNames(
-                        item.current
-                          ? "bg-gray-100 text-gray-900"
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
-                        "group flex items-center rounded-md px-2 py-2 text-sm font-medium"
-                      )}
-                    >
-                      <item.icon
+                  {barNavigation
+                    .filter(
+                      (fullBar_item) =>
+                        mainNavigation.findIndex((_item) => {
+                          console.log(_item.name, fullBar_item.name);
+                          return _item.name == fullBar_item.name;
+                        }) == -1
+                    )
+                    .map((item) => (
+                      <a
+                        key={item.name}
+                        onClick={() => handleSideBarToggle(item)}
+                        href={item.href}
                         className={classNames(
                           item.current
-                            ? "text-gray-500"
-                            : "text-gray-400 group-hover:text-gray-500",
-                          "mr-3 h-6 w-6 flex-shrink-0"
+                            ? "bg-gray-100 text-gray-900"
+                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+                          "group flex items-center rounded-md px-2 py-2 text-sm font-medium"
                         )}
-                        aria-hidden="true"
-                      />
-                      {item.name}
-                    </a>
-                  ))}
+                      >
+                        <item.icon
+                          className={classNames(
+                            item.current
+                              ? "text-gray-500"
+                              : "text-gray-400 group-hover:text-gray-500",
+                            "mr-3 h-6 w-6 flex-shrink-0"
+                          )}
+                          aria-hidden="true"
+                        />
+                        {item.name}
+                      </a>
+                    ))}
                 </nav>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Search, Wallet, and main section */}
         <div className="flex flex-1 flex-col lg:pl-64">
           <div className="sticky top-0 z-10 flex h-16 flex-shrink-0 bg-white shadow">
             <button
