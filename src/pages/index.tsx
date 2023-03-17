@@ -14,7 +14,9 @@ function Page() {
     <Fragment>
       <SignIn />
       {isConnected && <Account />}
-      <button onClick={() => connector?.disconnect()}>Click</button>
+      <button onClick={() => connector?.disconnect()}>
+        {isConnected ? "disconnect" : ""}
+      </button>
     </Fragment>
   );
   // return (
