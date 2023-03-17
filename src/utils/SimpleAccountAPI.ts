@@ -5,36 +5,83 @@ import { PaymasterAPI } from "@zerodevapp/sdk/dist/src/PaymasterAPI";
 import { AAProvider } from "../interfaces/AAProvider";
 import { BaseProvider } from "@ethersproject/providers";
 
-import { BaseAccount, SimpleAccount } from "@account-abstraction/contracts";
+import {
+  SimpleAccountFactory,
+  SimpleAccount__factory,
+  SimpleAccountFactory__factory,
+  SimpleAccount,
+} from "@account-abstraction/contracts";
+import { hexConcat } from "ethers/lib/utils.js";
+import { BigNumberish } from "ethers";
 
-interface BaseAccountAPIParams {
-  // provider: AAProvider;
-  provider: BaseProvider;
-  // overheads: { [key: string]: number };
-  entryPointAddress: string;
-  accountAddress?: string;
-  paymasterAPI?: PaymasterAPI;
-}
-
-// Define the interface for the constructor parameters.
-interface SimpleAccountAPIParams extends BaseAccountAPIParams {
-  entryPointAddress: string;
-  signer: Signer;
-
-  // owner: string;
-}
+import { SimpleAccountAPIParams, DetailsForUserOp } from "../interfaces";
+const simpleAccountAddress = "0x0576a174D229E3cFA37253523E645A78A0C91B57";
 
 export class SimpleAccountAPI extends BaseAccountAPI {
   // basically telling typescript that this will be assigned before it is accessed
+  name: string;
   owner!: string;
   signer: Signer;
+
+  factoryAddress?: `0x${string}`;
+  factory?: SimpleAccountFactory;
+  accountContract?: SimpleAccount;
+
   constructor(params: SimpleAccountAPIParams) {
     // removing overheads from params
     const { provider, entryPointAddress, signer } = params;
     super({ provider, entryPointAddress });
+    this.factoryAddress = simpleAccountAddress;
     this.signer = signer;
     // this.owner = params.owner;
     this.init();
+    this.name = "SimpleAccountAPI";
+  }
+
+  async _getAccountContract(): Promise<SimpleAccount> {
+    if (this.accountContract == null) {
+      this.accountContract = SimpleAccount__factory.connect(
+        await this.getAccountAddress(),
+        this.provider
+      );
+    }
+    return this.accountContract;
+  }
+
+  /**
+   * encode a method call from entryPoint to our contract
+   * @param target
+   * @param value
+   * @param data
+   */
+  async encodeExecute(details: DetailsForUserOp): Promise<string> {
+    const { target, value, data } = details;
+    const accountContract = await this._getAccountContract();
+    return accountContract.interface.encodeFunctionData("execute", [
+      target,
+      value!,
+      data,
+    ]);
+  }
+
+  async getAccountInitCode(): Promise<string> {
+    if (this.factory == null) {
+      if (this.factoryAddress != null) {
+        this.factory = SimpleAccountFactory__factory.connect(
+          this.factoryAddress,
+          this.provider
+        );
+      } else {
+        throw new Error("no factory to get initCode");
+      }
+    }
+    return hexConcat([
+      this.factory.address,
+      this.factory.interface.encodeFunctionData("createAccount", [
+        await this.signer.getAddress(),
+        0,
+      ]),
+    ]);
   }
 
   async init(): Promise<SimpleAccountAPI> {
@@ -45,9 +92,12 @@ export class SimpleAccountAPI extends BaseAccountAPI {
     return this;
   }
 
-  async getNonce(): Promise<number> {
-    const nonce = await this.provider.getTransactionCount(this.owner);
-    return nonce;
+  async getNonce(): Promise<ethers.BigNumber> {
+    if (await this.checkAccountPhantom()) {
+      return ethers.BigNumber.from(0);
+    }
+    const accountContract = await this._getAccountContract();
+    return await accountContract.nonce();
   }
 
   // Execute a transaction on behalf of the SimpleAccount

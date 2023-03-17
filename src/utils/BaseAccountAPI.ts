@@ -1,66 +1,21 @@
-import { ethers, BigNumber, providers, Contract, BaseContract } from "ethers";
+import { ethers, BigNumber } from "ethers";
 import {
   EntryPoint__factory,
-  BaseAccount__factory,
-} from "@zerodevapp/contracts";
+  EntryPoint,
+} from "@account-abstraction/contracts";
 import { PaymasterAPI } from "@zerodevapp/sdk/dist/src/PaymasterAPI";
 import { calcPreVerificationGas } from "@zerodevapp/sdk/dist/src/calcPreVerificationGas";
 import { resolveProperties } from "ethers/lib/utils.js";
 import { packUserOp, getUserOpHash } from "@account-abstraction/utils";
-import { BaseProvider } from "@ethersproject/providers";
-// import { UserOperationStruct } from "@zerodevapp/contracts";
-import { PromiseOrValue } from "@zerodevapp/contracts/dist/types/common";
-import { BytesLike } from "@ethersproject/bytes";
-
-// import { BaseAccountAPI } from "@zerodevapp/sdk/dist/src/BaseAccountAPI";
 import { BigNumberish } from "ethers";
-import { AAProvider } from "../interfaces/AAProvider";
+import { Provider } from "@ethersproject/providers";
 
-export type UserOperationStruct = {
-  sender: string;
-  nonce: BigNumberish;
-  initCode: BytesLike;
-  callData: BytesLike;
-  callGasLimit: BigNumberish;
-  verificationGasLimit: BigNumberish;
-  preVerificationGas: BigNumberish;
-  maxFeePerGas: BigNumberish;
-  maxPriorityFeePerGas: BigNumberish;
-  paymasterAndData: BytesLike;
-  signature: BytesLike;
-};
-
-interface BaseAccountAPIParams {
-  // provider: AAProvider;
-  provider: BaseProvider;
-  // overheads: { [key: string]: number };
-  entryPointAddress: string;
-  accountAddress?: string;
-  paymasterAPI?: PaymasterAPI;
-}
-
-interface DetailsForUserOp {
-  target: string;
-  value?: BigNumberish;
-  data: string;
-  gasLimit?: BigNumberish;
-  maxFeePerGas?: BigNumberish;
-  maxPriorityFeePerGas?: BigNumberish;
-}
-
-interface PartialUserOp {
-  sender: string;
-  nonce: BigNumberish;
-  initCode: BytesLike;
-  callData: BytesLike;
-  callGasLimit: BigNumberish;
-  verificationGasLimit: BigNumberish;
-  maxFeePerGas: BigNumberish;
-  maxPriorityFeePerGas: BigNumberish;
-  paymasterAndData: BytesLike;
-  signature: BytesLike;
-  preVerificationGas?: BigNumberish;
-}
+import {
+  UserOperationStruct,
+  BaseAccountAPIParams,
+  DetailsForUserOp,
+  PartialUserOp,
+} from "../interfaces";
 
 const SIG_SIZE = 65;
 
@@ -85,13 +40,13 @@ export abstract class BaseAccountAPI {
   // Define class properties and their types
   isPhantom: boolean;
   // provider: AAProvider;
-  provider: BaseProvider;
+  provider: Provider;
   // overheads: { [key: string]: number };
   entryPointAddress: string;
   accountAddress?: string;
   paymasterAPI?: PaymasterAPI;
   delegateMode: boolean;
-  entryPointView: Contract;
+  entryPointView: EntryPoint;
   senderAddress?: string;
 
   /**
@@ -106,12 +61,14 @@ export abstract class BaseAccountAPI {
     this.accountAddress = params.accountAddress;
     this.paymasterAPI = params.paymasterAPI;
     this.delegateMode = false;
+    // Notes from ZeroDev
     // factory "connect" defines the contract address. the contract "connect" defines the "from" address.
     // properly need to alter this / create a entry point contract instance
+    // instead of using the zero address, you would you the users address(?)
     this.entryPointView = EntryPoint__factory.connect(
       params.entryPointAddress,
       params.provider
-    ).connect(params.provider);
+    ).connect(ethers.constants.AddressZero);
   }
 
   // Add return types to all methods
@@ -123,6 +80,14 @@ export abstract class BaseAccountAPI {
     return this;
   }
 
+  abstract encodeExecute(details: DetailsForUserOp): Promise<string>;
+
+  abstract getAccountInitCode(): Promise<string>;
+
+  abstract getNonce(): Promise<BigNumberish>;
+
+  abstract signUserOpHash(userOpHash: string): Promise<string>;
+
   async checkAccountPhantom(): Promise<boolean> {
     if (!this.isPhantom) {
       // already deployed. no need to check anymore.
@@ -132,40 +97,14 @@ export abstract class BaseAccountAPI {
       this.getAccountAddress()
     );
     if (senderAddressCode.length > 2) {
-      // console.log(`SimpleAccount Contract already deployed at ${this.senderAddress}`)
       this.isPhantom = false;
     } else {
-      // console.log(`SimpleAccount Contract is NOT YET deployed at ${this.senderAddress} - working in "phantom account" mode.`)
+      console.log(
+        `SimpleAccount Contract is NOT YET deployed at ${this.senderAddress} - working in "phantom account" mode.`
+      );
+      this.isPhantom = true;
     }
     return this.isPhantom;
-  }
-
-  async encodeExecute(details: DetailsForUserOp): Promise<string> {
-    const { target, value, data, gasLimit } = details;
-    const encoded = await this.entryPointView.populateTransaction.execute(
-      target,
-      value,
-      data,
-      gasLimit
-    );
-    if (!encoded.data) {
-      throw new Error("no data");
-    }
-    return encoded.data;
-  }
-
-  async getAccountInitCode(): Promise<string> {
-    /**
-     * Change this into an ethers contract call instead of doing callStatic
-     * the signer prints out to the console, and shows methods that are available
-     */
-    const initCode = await this.entryPointView.callStatic.getInitCode();
-    return initCode;
-  }
-
-  async getNonce(): Promise<number> {
-    const nonce = await this.entryPointView.callStatic.getNonce();
-    return nonce.toNumber();
   }
 
   async getCounterFactualAddress(): Promise<string> {
@@ -214,7 +153,7 @@ export abstract class BaseAccountAPI {
     let callData: string;
     const value = detailsForUserOp.value ?? BigNumber.from(0);
 
-    // Not doing delegate mode
+    // Not doing delegate mode, if we were we sending ops for the user we would need to use this(will implement depending on time)
     // if (this.delegateMode) {
     //   callData = await this.encodeExecuteDelegate(
     //     detailsForUserOp.target,
@@ -305,7 +244,7 @@ export abstract class BaseAccountAPI {
       maxPriorityFeePerGas: maxPriorityFeePerGas
         ? maxPriorityFeePerGas
         : BigNumber.from(0),
-      // Dummy values are required here ( from ZeroDev)
+      // Dummy values are required here (from ZeroDev)
       paymasterAndData:
         "0xfe7dbcab8aaee4eb67943c1e6be95b1d065985c6000000000000000000000000000000000000000000000000000001869aa31cf400000000000000000000000000000000000000000000000000000000000000007dfe2190f34af27b265bae608717cdc9368b471fc0c097ab7b4088f255b4961e57b039e7e571b15221081c5dce7bcb93459b27a3ab65d2f8a889f4a40b4022801b",
       signature: ethers.utils.hexlify(Buffer.alloc(SIG_SIZE, 1)),
@@ -335,19 +274,9 @@ export abstract class BaseAccountAPI {
     };
   }
 
-  // async signUserOpHash(userOpHash: string): Promise<string> {
-  //   const signer = this.provider.getSigner();
-
-  //   const signature = await signer.signMessage(userOpHash);
-  //   return signature;
-  // }
-
-  abstract signUserOpHash(userOpHash: string): Promise<string>;
-
   async signUserOp(userOp: UserOperationStruct): Promise<UserOperationStruct> {
     const userOpHash = await this.getUserOpHash(userOp);
     const signature = await this.signUserOpHash(userOpHash);
-    // const signature = await this.provider.
     return { ...userOp, signature };
   }
 
@@ -357,6 +286,15 @@ export abstract class BaseAccountAPI {
     return await this.signUserOp(await this.createUnsignedUserOp(info));
   }
 
+  /**
+   * get the transaction that has this userOpHash mined, or null if not found
+   * @param userOpHash returned by sendUserOpToBundler (or by getUserOpHash..)
+   * @param timeout stop waiting after this timeout
+   * @param interval time to wait between polls.
+   * @return the transactionHash this userOp was mined, or null if not found.
+   *
+   * @note implement in ZeroDev's BaseAccountAPI
+   */
   async getUserOpReceipt(
     userOpHash: string,
     timeout = 30000,
