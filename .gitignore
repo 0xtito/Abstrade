@@ -7,7 +7,7 @@
 .pnp.js
 
 # testing
-
+# src/contracts
 /coverage
 
 # next.js
