@@ -11,7 +11,7 @@ import { MetaMaskConnector } from "wagmi/connectors/metaMask";
 
 // import { SafeAuthAAConnector } from "./connectors/SafeAuthAAConnector";
 // import { SafeAuthAAConnector } from "./connectors/TestSafeAuthAAConnector";
-import { SafeAuthAAConnector } from "./connectors/_SafeAuthAAConnector";
+import { Web3AuthAAConnector } from "./connectors/Web3AuthAAConnector";
 
 // web3auth
 import { Web3AuthConnector } from "@web3auth/web3auth-wagmi-connector";
@@ -65,23 +65,22 @@ const { chains, provider } = configureChains(
 // entryPointAddress: string;
 // accountFactoryAddress: string;
 
-const connectors = [
-  new SafeAuthAAConnector({
-    chains,
-    options: {
-      debug: true,
-      projectId: "1",
-      entryPointAddress: entryPointAddress,
-      accountFactoryAddress: "0x09c58cf6be8E25560d479bd52B4417d15bCA2845",
-    },
-  }),
-  new MetaMaskConnector({ chains }),
-];
+// const connectors = [
+//   new Web3AuthAAConnector({
+//     chains,
+//     options: {
+//       projectId: "1",
+//       entryPointAddress: entryPointAddress,
+//       accountFactoryAddress: "0x09c58cf6be8E25560d479bd52B4417d15bCA2845",
+//     },
+//   }),
+//   new MetaMaskConnector({ chains }),
+// ];
 
-export const client = createClient({
-  autoConnect: false,
-  connectors,
-  provider,
-});
+// export const client = createClient({
+//   autoConnect: false,
+//   connectors,
+//   provider,
+// });
 
-export { chains };
+export { chains, provider };
