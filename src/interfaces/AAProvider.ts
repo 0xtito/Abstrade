@@ -5,14 +5,7 @@ import {
 } from "@ethersproject/providers";
 import { Signer, BigNumber } from "ethers";
 import { Network } from "@ethersproject/networks";
-import { ClientConfig } from "./ClientConfig";
-import { AASigner } from "./AASigner";
-// import { ZeroDevSigner } from "./ZeroDevSigner";
-import { HttpRpcClient } from "@zerodevapp/sdk/dist/src/HttpRpcClient";
-// import { HttpRpcClient } from "./HttpRpcClient";
-// import { ClientConfig } from "@zerodevapp/sdk/dist/src/ClientConfig";
-import { EntryPoint, UserOperationStruct } from "@zerodevapp/contracts";
-import { BaseAccountAPI } from "@zerodevapp/sdk/dist/src/BaseAccountAPI";
+import { UserOperationStruct } from "@account-abstraction/contracts";
 import { CustomHttpRpcClient } from "./CustomHttpRpcClient";
 import debug from "debug";
 import { hexValue, resolveProperties } from "ethers/lib/utils.js";
@@ -21,15 +14,15 @@ const log = debug("AAProvider");
 
 import { UserOperationEventListener } from "./UserOperationEventListener";
 import { SimpleAccountAPI } from "../utils/SimpleAccountAPI";
-import { ethers } from "ethers";
-import { ExternalProvider } from "@ethersproject/providers";
+import { AASigner } from "./AASigner";
+import { Web3AuthConfig } from ".";
 
 /**
  * Based on ethersproject's Base Provider and [ZeroDevApp's SDK](https://zerodev.app/)
  */
 export class AAProvider extends BaseProvider {
   readonly chainId: number;
-  readonly config: Omit<ClientConfig, "projectId">;
+  readonly config: Omit<Web3AuthConfig, "projectId">;
   readonly originalSigner: Signer;
   readonly originalProvider: BaseProvider;
   readonly httpRpcClient: CustomHttpRpcClient;
@@ -41,7 +34,7 @@ export class AAProvider extends BaseProvider {
   readonly signer: AASigner;
   constructor(
     chainId: number,
-    config: Omit<ClientConfig, "projectId">,
+    config: Omit<Web3AuthConfig, "projectId">,
     originalSigner: Signer,
     originalProvider: BaseProvider,
     customHttpRpcClient: CustomHttpRpcClient,

@@ -1,13 +1,5 @@
-// import { HttpRpcClient, UserOperationReceipt } from './HttpRpcClient';
-// import { BaseAccountAPI } from './BaseAccountAPI';
-// import { Call } from './multisend';
-// BasAccountAPI will eventually be replaced with Abstrades Smart Account API
-import { BaseAccountAPI } from "@zerodevapp/sdk/dist/src/BaseAccountAPI";
 import { Call } from "@zerodevapp/sdk/dist/src/multisend";
-import {
-  HttpRpcClient,
-  UserOperationReceipt,
-} from "@zerodevapp/sdk/dist/src/HttpRpcClient";
+import { UserOperationReceipt } from "@zerodevapp/sdk/dist/src/HttpRpcClient";
 import { Signer } from "ethers";
 import { Deferrable } from "ethers/lib/utils.js";
 import {
@@ -17,24 +9,27 @@ import {
 } from "@ethersproject/providers";
 import { BigNumber, Bytes, BigNumberish, ContractTransaction } from "ethers";
 import { UserOperationStruct } from "@zerodevapp/contracts";
-import { ClientConfig } from "./ClientConfig";
+// import { ClientConfig } from "./ClientConfig";
+import { Web3AuthConfig } from ".";
 import { AAProvider } from "./AAProvider";
+import { CustomHttpRpcClient } from "./CustomHttpRpcClient";
+import { SimpleAccountAPI } from "../utils/SimpleAccountAPI";
 
 /**
  * Based on ethers Signer and [ZeroDevApp's SDK](https://zerodev.app/)
  */
 export declare class AASigner extends Signer {
-  readonly config: ClientConfig;
+  readonly config: Omit<Web3AuthConfig, "projectId">;
   readonly originalSigner: Signer;
-  readonly zdProvider: AAProvider;
-  readonly httpRpcClient: HttpRpcClient;
-  readonly smartAccountAPI: BaseAccountAPI;
+  readonly AAProvider: AAProvider;
+  readonly httpRpcClient: CustomHttpRpcClient;
+  readonly smartAccountAPI: SimpleAccountAPI;
   constructor(
-    config: ClientConfig,
+    config: Web3AuthConfig,
     originalSigner: Signer,
     AAProvider: AAProvider,
-    httpRpcClient: HttpRpcClient,
-    smartAccountAPI: BaseAccountAPI
+    CustomHttpRpcClient: CustomHttpRpcClient,
+    smartAccountAPI: SimpleAccountAPI
   );
   address?: string;
   delegateCopy(): AASigner;

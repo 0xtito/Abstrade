@@ -1,7 +1,3 @@
-// import { HttpRpcClient, UserOperationReceipt } from './HttpRpcClient';
-// import { BaseAccountAPI } from './BaseAccountAPI';
-// import { Call } from './multisend';
-// SimpleAccountAPI will eventually be replaced with Abstrades Smart Account API
 import { UserOperationReceipt } from "@zerodevapp/sdk/dist/src/HttpRpcClient";
 import { Signer } from "ethers";
 import { Deferrable } from "ethers/lib/utils.js";
@@ -11,34 +7,22 @@ import {
   TransactionResponse,
 } from "@ethersproject/providers";
 import { BigNumber, Bytes, BigNumberish, ContractTransaction } from "ethers";
-import { ClientConfig } from "./ClientConfig";
+// import { ClientConfig } from "./ClientConfig";
+import { Web3AuthConfig } from ".";
 import { AAProvider } from "./AAProvider";
+// dont need to include (now)
 // import { Hooks } from "./ClientConfig";
-import { BytesLike } from "ethers/lib/utils.js";
 
 import { CustomHttpRpcClient } from "./CustomHttpRpcClient";
 import ethers_eip712_1 from "ethers-eip712";
 import { SimpleAccountAPI } from "../utils/SimpleAccountAPI";
-
-export type UserOperationStruct = {
-  sender: string;
-  nonce: BigNumberish;
-  initCode: BytesLike;
-  callData: BytesLike;
-  callGasLimit: BigNumberish;
-  verificationGasLimit: BigNumberish;
-  preVerificationGas: BigNumberish;
-  maxFeePerGas: BigNumberish;
-  maxPriorityFeePerGas: BigNumberish;
-  paymasterAndData: BytesLike;
-  signature: BytesLike;
-};
+import { UserOperationStruct } from ".";
 
 /**
  * Based on ethers Signer and [ZeroDevApp's SDK](https://zerodev.app/)
  */
 export class AASigner extends Signer {
-  readonly config: Omit<ClientConfig, "projectId">;
+  readonly config: Omit<Web3AuthConfig, "projectId">;
   readonly originalSigner: Signer;
   readonly AAProvider: AAProvider;
   readonly httpRpcClient: CustomHttpRpcClient;
@@ -46,7 +30,7 @@ export class AASigner extends Signer {
   address?: string;
 
   constructor(
-    config: Omit<ClientConfig, "projectId">,
+    config: Omit<Web3AuthConfig, "projectId">,
     originalSigner: Signer,
     AAProvider: AAProvider,
     CustomHttpRpcClient: CustomHttpRpcClient,

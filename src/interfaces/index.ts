@@ -1,23 +1,65 @@
 // testing to add modalConfig to the safe wallet (there implementation is not in prod yet)
 import { WALLET_ADAPTER_TYPE } from "@web3auth/base";
 import { Signer } from "ethers";
-import { Hooks } from "./ClientConfig";
 import { BytesLike } from "ethers/lib/utils.js";
 import { BigNumberish } from "ethers";
-// import { ModalConfig } from "@web3auth/modal";
-
-import { Options } from "@web3auth/web3auth-wagmi-connector";
-
-import { ClientConfig } from "./ClientConfig";
-
-// export interface Web3AuthProviderConfig {
-//   rpcTarget: string;
-//   clientId: string;
-//   network: "mainnet" | "aqua" | "celeste" | "cyan" | "testnet";
-//   theme: "light" | "dark" | "auto";
-//   appLogo?: string;
-//   modalConfig?: Record<WALLET_ADAPTER_TYPE, ModalConfig>;
-// }
+import { Chain } from "wagmi";
+import type { IWeb3Auth } from "@web3auth/base";
+import type { IWeb3AuthModal, ModalConfig, Web3Auth } from "@web3auth/modal";
+import type { OpenloginLoginParams } from "@web3auth/openlogin-adapter";
+export interface Options {
+  web3AuthInstance: Web3Auth;
+  loginParams?: OpenloginLoginParams;
+  modalConfig?: Record<WALLET_ADAPTER_TYPE, ModalConfig>;
+}
+import { BaseProvider } from "@ethersproject/providers";
+import { PaymasterAPI } from "@zerodevapp/sdk/dist/src/PaymasterAPI";
+import {
+  SessionProposal,
+  TransactionInfo,
+} from "@zerodevapp/sdk/dist/src/types";
+export interface Hooks {
+  transactionStarted?: (tx: TransactionInfo) => void;
+  transactionConfirmed?: (txHash: string) => void;
+  transactionReverted?: (txHash: string) => void;
+  walletConnectSessionProposal?: (proposal: SessionProposal) => void;
+}
+/**
+ * configuration params for wrapProvider and ZeroDev's ClientConfig
+ * @note there is no active bundler on Gnosis Chain, so we must either create a custom bundler or work without it
+ *     so if there is no bundler, we don't need to include the bundlerUrl in the config
+ *
+ */
+export interface Web3AuthConfig extends Options {
+  /**
+   * Needed to track gas usage
+   */
+  projectId: string;
+  /**
+   * the entry point to use
+   */
+  entryPointAddress: string;
+  accountFactoryAddress: string;
+  /**
+   * url to the bundler
+   * @note there is no active bundler on Gnosis Chain, so we must either create a custom bundler or work without it
+   */
+  bundlerUrl?: string;
+  /**
+   * if set, use this pre-deployed wallet.
+   * (if not set, use getSigner().getAddress() to query the "counterfactual" address of wallet.
+   *  you may need to fund this address so the wallet can pay for its own creation)
+   */
+  walletAddress?: string;
+  /**
+   * if set, call just before signing.
+   */
+  paymasterAPI?: PaymasterAPI;
+  /**
+   * hooks are functions invoked during the lifecycle of transactions
+   */
+  hooks?: Hooks;
+}
 
 export type AccountParams = {
   projectId: string;
@@ -80,10 +122,61 @@ export interface UserOperationReceipt {
   receipt: any;
 }
 
-export interface web3AuthClientConfig extends ClientConfig {
-  options: Options;
+export interface DetailsForUserOp {
+  target: string;
+  value?: BigNumberish;
+  data: string;
+  gasLimit?: BigNumberish;
+  maxFeePerGas?: BigNumberish;
+  maxPriorityFeePerGas?: BigNumberish;
 }
 
-export interface web3AuthConfig extends web3AuthClientConfig {
-  options: Options;
+export interface BaseAccountAPIParams {
+  // provider: AAProvider;
+  provider: BaseProvider;
+  // overheads: { [key: string]: number };
+  entryPointAddress: string;
+  accountAddress?: string;
+  paymasterAPI?: PaymasterAPI;
+}
+
+// Define the interface for the constructor parameters.
+export interface SimpleAccountAPIParams extends BaseAccountAPIParams {
+  entryPointAddress: string;
+  signer: Signer;
+
+  // owner: string;
+}
+
+export interface PartialUserOp {
+  sender: string;
+  nonce: BigNumberish;
+  initCode: BytesLike;
+  callData: BytesLike;
+  callGasLimit: BigNumberish;
+  verificationGasLimit: BigNumberish;
+  maxFeePerGas: BigNumberish;
+  maxPriorityFeePerGas: BigNumberish;
+  paymasterAndData: BytesLike;
+  signature: BytesLike;
+  preVerificationGas?: BigNumberish;
+}
+
+/**
+ * For the src/pages section
+ */
+
+export interface BarNavItem {
+  name: string;
+  href: string;
+  icon: React.ForwardRefExoticComponent<React.SVGProps<SVGSVGElement>>;
+  current: boolean;
+}
+
+export interface SidebarNavigationProps {
+  sidebarNavigation: BarNavItem[];
+}
+
+export interface DashboardLayoutProps {
+  children: JSX.Element;
 }

@@ -5,7 +5,6 @@ import {
   EstimateUserOpGasResult,
   UserOperationReceipt,
 } from "./";
-import { EntryPoint } from "@zerodevapp/contracts";
 import { deepHexlify } from "@account-abstraction/utils";
 import { resolveProperties } from "ethers/lib/utils.js";
 

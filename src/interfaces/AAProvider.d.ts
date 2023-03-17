@@ -5,14 +5,12 @@ import {
 } from "@ethersproject/providers";
 import { Signer } from "ethers";
 import { Network } from "@ethersproject/networks";
-// import { ClientConfig } from "./ClientConfig";
 import { AASigner } from "./AASigner";
-// import { ZeroDevSigner } from "./ZeroDevSigner";
-import { HttpRpcClient } from "@zerodevapp/sdk/dist/src/HttpRpcClient";
-// import { HttpRpcClient } from "./HttpRpcClient";
+import { CustomHttpRpcClient } from "./CustomHttpRpcClient";
+
 import { ClientConfig } from "@zerodevapp/sdk/dist/src/ClientConfig";
-import { EntryPoint, UserOperationStruct } from "@zerodevapp/contracts";
-import { BaseAccountAPI } from "@zerodevapp/sdk/dist/src/BaseAccountAPI";
+import { UserOperationStruct } from "@zerodevapp/contracts";
+import { SimpleAccountAPI } from "../utils/SimpleAccountAPI";
 
 /**
  * Based on ethersproject's Base Provider and [ZeroDevApp's SDK](https://zerodev.app/)
@@ -22,19 +20,23 @@ export declare class AAProvider extends BaseProvider {
   readonly config: Omit<ClientConfig, "projectId">;
   readonly originalSigner: Signer;
   readonly originalProvider: BaseProvider;
-  readonly httpRpcClient: HttpRpcClient;
-  readonly entryPoint: EntryPoint;
-  readonly smartAccountAPI: BaseAccountAPI;
+  readonly httpRpcClient: CustomHttpRpcClient;
+  // disregarding this for now
+  // readonly entryPoint: EntryPoint;
+  readonly entryPointAddress: string;
+  readonly smartAccountAPI: SimpleAccountAPI;
   initializedBlockNumber: number;
   readonly signer: AASigner;
   constructor(
     chainId: number,
-    config: ClientConfig,
+    config: Omit<ClientConfig, "projectId">,
     originalSigner: Signer,
     originalProvider: BaseProvider,
-    httpRpcClient: HttpRpcClient,
-    entryPoint: EntryPoint,
-    smartAccountAPI: BaseAccountAPI
+    httpRpcClient: CustomHttpRpcClient,
+    // disregarding this for now
+    // entryPoint: EntryPoint,
+    entryPointAddress: string,
+    smartAccountAPI: SimpleAccountAPI
   );
   /**
    * finish intializing the provider.
