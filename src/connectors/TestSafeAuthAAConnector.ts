@@ -50,7 +50,7 @@ const config = {
 // import { CustomHttpRpcClient } from "../interfaces/CustomHttpRpcClient";
 /**
  * Custom Connector for [Safe Auth Kit Wallet](https://docs.gnosis-safe.io/learn/safe-core-account-abstraction-sdk)
- * @note Implementing the Safe Auth Kit Wallet as a Smart Account Wallet
+ * @note Implementing the Safe Auth Kit Wallet as a Smart Account Wallet INACTIVE
  * @see {@link https://docs.gnosis-safe.io/learn/safe-core-account-abstraction-sdk/auth-kit}
  * @description This connector is used to connect to the Safe AA Wallet, but with a few modifications to let it work with wagmi
  * @info SafeConnector that is already in wagmi wont work with the Safe AA Wallet

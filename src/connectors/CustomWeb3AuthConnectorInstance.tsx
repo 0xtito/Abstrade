@@ -1,21 +1,27 @@
 // Web3Auth Libraries
-import { Web3AuthConnector } from "@web3auth/web3auth-wagmi-connector";
+import { Web3AuthAAConnector } from "./Web3AuthAAConnector";
 import { Web3Auth } from "@web3auth/modal";
 import { OpenloginAdapter } from "@web3auth/openlogin-adapter";
 import { CHAIN_NAMESPACES } from "@web3auth/base";
-import { TorusWalletConnectorPlugin } from "@web3auth/torus-wallet-connector-plugin";
 import { Chain } from "wagmi";
 
-export default function Web3AuthConnectorInstance(chains: Chain[]) {
+const entryPointAddress: string = "0x0576a174D229E3cFA37253523E645A78A0C91B57";
+
+/**
+ * An Instance of the Web3AAConnector
+ * @note currently not using, but will most likly import this into the _app.tsx file later on
+ */
+export default function Web3AuthAAConnectorInstance(chains: Chain[]) {
   // Create Web3Auth Instance
   const name = "My App Name";
   const iconUrl = "https://web3auth.io/docs/contents/logo-ethereum.png";
   const web3AuthInstance = new Web3Auth({
-    clientId: "YOUR_CLIENT_ID",
+    clientId: process.env.NEXT_PUBLIC_WEB3AUTH_CLIENT_ID!,
+    web3AuthNetwork: "testnet",
     chainConfig: {
       chainNamespace: CHAIN_NAMESPACES.EIP155,
       chainId: "0x" + chains[0].id.toString(16),
-      rpcTarget: chains[0].rpcUrls.default.http[0], // This is the public RPC we have added, please pass on your own endpoint while creating an app
+      rpcTarget: chains[0].rpcUrls.default.http[0],
       displayName: chains[0].name,
       tickerName: chains[0].nativeCurrency?.name,
       ticker: chains[0].nativeCurrency?.symbol,
@@ -46,27 +52,14 @@ export default function Web3AuthConnectorInstance(chains: Chain[]) {
   });
   web3AuthInstance.configureAdapter(openloginAdapterInstance);
 
-  // Add Torus Wallet Plugin (optional)
-  const torusPlugin = new TorusWalletConnectorPlugin({
-    torusWalletOpts: {
-      buttonPosition: "bottom-left",
-    },
-    walletInitOptions: {
-      whiteLabel: {
-        theme: { isDark: false, colors: { primary: "#00a8ff" } },
-        logoDark: iconUrl,
-        logoLight: iconUrl,
-      },
-      useWalletConnect: true,
-      enableLogging: true,
-    },
-  });
-  web3AuthInstance.addPlugin(torusPlugin);
-
-  return new Web3AuthConnector({
+  return new Web3AuthAAConnector({
     chains: chains,
     options: {
       web3AuthInstance,
+      entryPointAddress,
+      // filler values
+      projectId: "1",
+      accountFactoryAddress: "",
     },
   });
 }
