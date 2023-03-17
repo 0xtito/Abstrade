@@ -1,5 +1,7 @@
 require("@nomicfoundation/hardhat-toolbox");
 require("@nomiclabs/hardhat-etherscan");
+require("@nomiclabs/hardhat-ethers");
+require("@openzeppelin/hardhat-upgrades");
 require("dotenv").config();
 
 module.exports = {
@@ -12,7 +14,7 @@ module.exports = {
       },
     },
   },
-  defaultNetwork: "polygonMumbai",
+  defaultNetwork: "hardhat",
   networks: {
     hardhat: {
     },

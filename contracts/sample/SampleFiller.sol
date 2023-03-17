@@ -5,7 +5,7 @@ import "../core/ILimitOrderFiller.sol";
 import "../core/LimitOrderAccount.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract SimpleFiller is ILimitOrderFiller{
+contract SampleFiller is ILimitOrderFiller{
 
     function fillOrder(address _orderer, uint _orderId, uint _amount) public {
         LimitOrderAccount(payable(_orderer)).fillLimitOrder(_orderId, address(this), _amount, "0x");

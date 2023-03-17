@@ -7,13 +7,14 @@ pragma abicoder v2;
 /* solhint-disable reason-string */
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@account-abstraction/contracts/core/BaseAccount.sol";
+import "@account-abstraction/contracts/interfaces/IEntryPoint.sol";
 import "./ILimitOrderFiller.sol";
 
 /**
@@ -24,16 +25,16 @@ import "./ILimitOrderFiller.sol";
 contract LimitOrderAccount is
     BaseAccount,
     UUPSUpgradeable,
-    Initializable,
-    ReentrancyGuard
+    // Initializable,
+    ReentrancyGuardUpgradeable
 {
     using ECDSA for bytes32;
     using SafeMath for uint256;
 
     uint96 private _nonce;
     address public owner;
-    uint256 private orderIdCounter = 1;
-    IEntryPoint private immutable _entryPoint;
+    uint256 private orderIdCounter;
+    IEntryPoint private _entryPoint;
 
     struct LimitOrder {
         address tokenOut;
@@ -82,10 +83,10 @@ contract LimitOrderAccount is
     // solhint-disable-next-line no-empty-blocks
     receive() external payable {}
 
-    constructor(IEntryPoint anEntryPoint) {
-        _entryPoint = anEntryPoint;
-        _disableInitializers();
-    }
+    // constructor(IEntryPoint anEntryPoint) {
+    //     _entryPoint = anEntryPoint;
+    //     _disableInitializers();
+    // }
 
     function _onlyOwner() internal view {
         //directly from EOA owner, or through the account itself (which gets redirected through execute())
@@ -245,12 +246,14 @@ contract LimitOrderAccount is
      * a new implementation of SimpleAccount must be deployed with the new EntryPoint address, then upgrading
      * the implementation by calling `upgradeTo()`
      */
-    function initialize(address anOwner) public virtual initializer {
-        _initialize(anOwner);
+    function initialize(address anOwner, IEntryPoint anEntryPoint) public virtual initializer {
+        _initialize(anOwner, anEntryPoint);
     }
 
-    function _initialize(address anOwner) internal virtual {
+    function _initialize(address anOwner, IEntryPoint anEntryPoint) internal virtual {
         owner = anOwner;
+        _entryPoint = anEntryPoint;
+        orderIdCounter = 1;
         emit SimpleAccountInitialized(_entryPoint, owner);
     }
 
