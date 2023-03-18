@@ -34,7 +34,7 @@ contract LimitOrderAccount is
     uint96 private _nonce;
     address public owner;
     uint256 private orderIdCounter;
-    IEntryPoint private _entryPoint;
+    IEntryPoint private immutable _entryPoint;
 
     struct LimitOrder {
         address tokenOut;
@@ -83,10 +83,10 @@ contract LimitOrderAccount is
     // solhint-disable-next-line no-empty-blocks
     receive() external payable {}
 
-    // constructor(IEntryPoint anEntryPoint) {
-    //     _entryPoint = anEntryPoint;
-    //     _disableInitializers();
-    // }
+    constructor(IEntryPoint anEntryPoint) {
+        _entryPoint = anEntryPoint;
+        _disableInitializers();
+    }
 
     function _onlyOwner() internal view {
         //directly from EOA owner, or through the account itself (which gets redirected through execute())
@@ -246,13 +246,12 @@ contract LimitOrderAccount is
      * a new implementation of SimpleAccount must be deployed with the new EntryPoint address, then upgrading
      * the implementation by calling `upgradeTo()`
      */
-    function initialize(address anOwner, IEntryPoint anEntryPoint) public virtual initializer {
-        _initialize(anOwner, anEntryPoint);
+    function initialize(address anOwner) public virtual initializer {
+        _initialize(anOwner);
     }
 
-    function _initialize(address anOwner, IEntryPoint anEntryPoint) internal virtual {
+    function _initialize(address anOwner) internal virtual {
         owner = anOwner;
-        _entryPoint = anEntryPoint;
         orderIdCounter = 1;
         emit SimpleAccountInitialized(_entryPoint, owner);
     }

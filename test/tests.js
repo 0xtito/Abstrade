@@ -1,17 +1,13 @@
 const { expect, assert } = require('chai');
-const { ethers, upgrades } = require("hardhat");
+const { ethers } = require("hardhat");
+const crypto = require('crypto');
 
 describe("Abstrade", () => {
-    let order_creator;
 
     before(async () => {
-        // Market participants
-        loa_contract_owner = await ethers.provider.getSigner(0);
-
-        // LimitOrderSCW Contract Deployment
-        const LimitOrderSCW = await ethers.getContractFactory("LimitOrderSCW");
-        limitOrderSCW = await LimitOrderSCW.deploy();
-        await limitOrderSCW.deployed()
+        // EOA Wallets
+        deployer_eoa = await ethers.provider.getSigner(0);
+        loa_contract_owner = await ethers.provider.getSigner(1);
 
         // Entry Point Contract Deployment
         const entryPointContractArtifact = require("@account-abstraction/contracts/artifacts/EntryPoint.json");
@@ -19,9 +15,13 @@ describe("Abstrade", () => {
         entryPoint = await EntryPoint.deploy();
         await entryPoint.deployed()
 
-        // LimitOrderAccount Contract Deployment
-        const LimitOrderAccount = await ethers.getContractFactory("LimitOrderAccount");
-        limitOrderAccount = await upgrades.deployProxy(LimitOrderAccount,[await loa_contract_owner.getAddress(), entryPoint.address], { initializer: 'initialize' });
+        // LimitOrderAccountFactory Contract Deployment
+        const LimitOrderAccountFactory = await ethers.getContractFactory("LimitOrderAccountFactory");
+        limitOrderAccountFactory = await LimitOrderAccountFactory.deploy(entryPoint.address);
+        salt = "0x" + crypto.randomBytes(32).toString("hex");
+        await limitOrderAccountFactory.createAccount(loa_contract_owner.getAddress(), salt);
+        limitOrderAccountAddress = await limitOrderAccountFactory.getAddress(loa_contract_owner.getAddress(), salt);
+        limitOrderAccount = (await ethers.getContractFactory("LimitOrderAccount")).attach(limitOrderAccountAddress);
 
         // SampleFiller Contract Deployment
         const SampleFiller = await ethers.getContractFactory("SampleFiller");
