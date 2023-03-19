@@ -16,6 +16,8 @@ import { BigNumberish } from "ethers";
 
 import { SimpleAccountAPIParams, DetailsForUserOp } from "../interfaces";
 const simpleAccountAddress = "0x0576a174D229E3cFA37253523E645A78A0C91B57";
+const simpleAccountFactoryAddress =
+  "0x6C583EE7f3a80cB53dDc4789B0Af1aaFf90e55F3";
 
 export class SimpleAccountAPI extends BaseAccountAPI {
   // basically telling typescript that this will be assigned before it is accessed
@@ -31,9 +33,9 @@ export class SimpleAccountAPI extends BaseAccountAPI {
     // removing overheads from params
     const { provider, entryPointAddress, signer } = params;
     super({ provider, entryPointAddress });
-    this.factoryAddress = simpleAccountAddress;
+    this.factoryAddress = simpleAccountFactoryAddress;
     this.signer = signer;
-    // this.owner = params.owner;
+    // this.owner = signer.;
     this.init();
     this.name = "SimpleAccountAPI";
   }
@@ -70,7 +72,7 @@ export class SimpleAccountAPI extends BaseAccountAPI {
         this.factory = SimpleAccountFactory__factory.connect(
           this.factoryAddress,
           this.provider
-        );
+        ).connect(ethers.constants.AddressZero);
       } else {
         throw new Error("no factory to get initCode");
       }
@@ -100,7 +102,7 @@ export class SimpleAccountAPI extends BaseAccountAPI {
     return await accountContract.nonce();
   }
 
-  // Execute a transaction on behalf of the SimpleAccount
+  // Execute a transaction on behalf of the SimpleAccount (this would currently make the user pay for the gas)
   async execute(
     dest: string,
     value: ethers.BigNumberish,

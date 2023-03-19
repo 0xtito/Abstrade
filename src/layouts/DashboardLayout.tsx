@@ -1,5 +1,5 @@
-import React from "react";
-import { Fragment, useState } from "react";
+import React, { useRef } from "react";
+import { Fragment, useState, createRef } from "react";
 import { Dialog, Menu, Transition } from "@headlessui/react";
 import {
   Bars3BottomLeftIcon,
@@ -18,10 +18,19 @@ import {
 import { MagnifyingGlassIcon } from "@heroicons/react/20/solid";
 import Image from "next/image";
 
-import { WalletDropDown, Divider } from "../components";
+import {
+  WalletDropDown,
+  Divider,
+  WideSidebar,
+  NarrowSidebar,
+  OrderSection,
+} from "../components";
 // import AbstradeLogo from "../static/images/abstrade_logo_light.png";
 import AbstradeLogo from "../static/images/abstrade-v2-light.png";
 import { BarNavItem, DashboardLayoutProps } from "../interfaces";
+import { classNames } from "../utils";
+
+const assets = ["ETH", "BTC"];
 
 const mainNavigation = [
   { name: "Home", href: "#", icon: HomeIcon, current: false },
@@ -48,25 +57,25 @@ const userNavigation = [
   { name: "Sign out", href: "#" },
 ];
 
-function classNames(...classes: string[]) {
-  return classes.filter(Boolean).join(" ");
-}
+const onSubmit = (asset: string, price: number, amount: number) => {
+  console.log(asset, price, amount);
+};
 
 export function DashboardLayout(props: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [barNavigation, setBarNavigation] = useState(fullBarNav);
-  const [sidebarExpanded, setSidebarExpanded] = useState(true);
-
-  const handleSideBarToggle = (item: BarNavItem) => {
-    const newNav = barNavigation.map((_item) => {
-      _item.current = false;
-      if (item.name == _item.name) _item.current = true;
-      return _item;
-    });
-    console.log(newNav);
-    // item.current = true;
-    setBarNavigation(newNav);
-  };
+  const [sidebarNavigation, setsidearNavigation] = useState(fullBarNav);
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const sidebar = createRef();
+  // const handleSideBarToggle = (item: BarNavItem) => {
+  //   const newNav = barNavigation.map((_item) => {
+  //     _item.current = false;
+  //     if (item.name == _item.name) _item.current = true;
+  //     return _item;
+  //   });
+  //   console.log(newNav);
+  //   // item.current = true;
+  //   setBarNavigation(newNav);
+  // };
 
   return (
     <Fragment>
@@ -124,82 +133,6 @@ export function DashboardLayout(props: DashboardLayoutProps) {
                       </button>
                     </div>
                   </Transition.Child>
-                  <div className="flex flex-shrink-0 items-center px-4">
-                    <Image
-                      className="h-auto w-auto"
-                      src={AbstradeLogo}
-                      alt="Abstrade"
-                    />
-                  </div>
-                  <div className="mt-5 h-0 flex-1 overflow-y-auto">
-                    <div>
-                      {/* Items above Divider */}
-                      <nav className="flex-1 space-y-1 px-2 pb-2">
-                        {barNavigation
-                          .filter(
-                            (item) =>
-                              userSettingsNav.findIndex(
-                                (_item) => _item.name == item.name
-                              ) > -1
-                          )
-                          .map((item) => (
-                            <a
-                              key={item.name}
-                              href={item.href}
-                              className={classNames(
-                                item.current
-                                  ? "bg-gray-100 text-gray-900"
-                                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
-                                "group flex items-center rounded-md px-2 py-2 text-sm font-medium"
-                              )}
-                            >
-                              <item.icon
-                                className={classNames(
-                                  item.current
-                                    ? "text-gray-500"
-                                    : "text-gray-400 group-hover:text-gray-500",
-                                  "mr-3 h-6 w-6 flex-shrink-0"
-                                )}
-                                aria-hidden="true"
-                              />
-                              {item.name}
-                            </a>
-                          ))}
-                      </nav>
-                      <Divider
-                        Icon={
-                          sidebarExpanded ? ChevronLeftIcon : ChevronRightIcon
-                        }
-                        setSidebarExpanded={setSidebarExpanded}
-                      />
-                      {/* Items below Divider */}
-                      <nav className="flex-1 space-y-1 p-2">
-                        {userSettingsNav.map((item) => (
-                          <a
-                            key={item.name}
-                            href={item.href}
-                            className={classNames(
-                              item.current
-                                ? "bg-gray-100 text-gray-900"
-                                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
-                              "group flex items-center rounded-md px-2 py-2 text-sm font-medium"
-                            )}
-                          >
-                            <item.icon
-                              className={classNames(
-                                item.current
-                                  ? "text-gray-500"
-                                  : "text-gray-400 group-hover:text-gray-500",
-                                "mr-3 h-6 w-6 flex-shrink-0"
-                              )}
-                              aria-hidden="true"
-                            />
-                            {item.name}
-                          </a>
-                        ))}
-                      </nav>
-                    </div>
-                  </div>
                 </Dialog.Panel>
               </Transition.Child>
               <div className="w-14 flex-shrink-0" aria-hidden="true">
@@ -212,100 +145,73 @@ export function DashboardLayout(props: DashboardLayoutProps) {
         {/* Make a sidebar that can expand, compress. Giving users more room to work with, helpful for our design as well*/}
 
         {/* Static sidebar for desktop */}
-        <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
-          <div className="flex flex-grow flex-col overflow-y-auto border-r border-gray-200 bg-white">
-            <div className="flex flex-shrink-0 items-center px-4">
-              <Image
-                height={200}
-                className="h-auto w-auto"
-                src={AbstradeLogo}
-                alt="Abstrade"
-              />
-            </div>
-            <div className="mt-5 flex flex-grow flex-col">
-              <div>
-                {/* Items above Divider */}
-                <nav className="flex-1 space-y-1 px-2 pb-2">
-                  {barNavigation
-                    .filter(
-                      (fullBar_item) =>
-                        mainNavigation.findIndex((_item) => {
-                          console.log(_item.name, fullBar_item.name);
-                          return _item.name == fullBar_item.name;
-                        }) > -1
-                    )
-                    .map((item) => (
-                      <a
-                        key={item.name}
-                        href={item.href}
-                        onClick={() => handleSideBarToggle(item)}
-                        className={classNames(
-                          item.current
-                            ? "bg-gray-100 text-gray-900"
-                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
-                          "group flex items-center rounded-md px-2 py-2 text-sm font-medium"
-                        )}
-                      >
-                        <item.icon
-                          className={classNames(
-                            item.current
-                              ? "text-gray-500"
-                              : "text-gray-400 group-hover:text-gray-500",
-                            "mr-3 h-6 w-6 flex-shrink-0"
-                          )}
-                          aria-hidden="true"
-                        />
-                        {item.name}
-                      </a>
-                    ))}
-                </nav>
-                <Divider
-                  Icon={sidebarExpanded ? ChevronLeftIcon : ChevronRightIcon}
-                  setSidebarExpanded={setSidebarExpanded}
-                />
-                {/* Items below Divider */}
-                <nav className="flex-1 space-y-1 p-2">
-                  {barNavigation
-                    .filter(
-                      (fullBar_item) =>
-                        mainNavigation.findIndex((_item) => {
-                          console.log(_item.name, fullBar_item.name);
-                          return _item.name == fullBar_item.name;
-                        }) == -1
-                    )
-                    .map((item) => (
-                      <a
-                        key={item.name}
-                        onClick={() => handleSideBarToggle(item)}
-                        href={item.href}
-                        className={classNames(
-                          item.current
-                            ? "bg-gray-100 text-gray-900"
-                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
-                          "group flex items-center rounded-md px-2 py-2 text-sm font-medium"
-                        )}
-                      >
-                        <item.icon
-                          className={classNames(
-                            item.current
-                              ? "text-gray-500"
-                              : "text-gray-400 group-hover:text-gray-500",
-                            "mr-3 h-6 w-6 flex-shrink-0"
-                          )}
-                          aria-hidden="true"
-                        />
-                        {item.name}
-                      </a>
-                    ))}
-                </nav>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col"> */}
+        {/* {sidebarExpanded ? (
+          <WideSidebar
+            sidebarExpanded={sidebarExpanded}
+            setSidebarExpanded={setSidebarExpanded}
+            sidebarNavigation={sidebarNavigation}
+            setSidebarNavigation={setsidearNavigation}
+            mainNavigation={mainNavigation}
+            userSettingsNav={userSettingsNav}
+          />
+        ) : (
+          <NarrowSidebar
+            sidebarExpanded={sidebarExpanded}
+            setSidebarExpanded={setSidebarExpanded}
+            sidebarNavigation={sidebarNavigation}
+            setSidebarNavigation={setsidearNavigation}
+            mainNavigation={mainNavigation}
+            userSettingsNav={userSettingsNav}
+          />
+        )} */}
+        <Transition.Root show={sidebarExpanded} as={Fragment}>
+          <Transition.Child
+            as={WideSidebar}
+            ref={createRef()} // Pass the ref prop directly
+            enter="transform transition duration-300"
+            enterFrom="-translate-x-full"
+            enterTo="translate-x-0"
+            leave="transform transition duration-300"
+            leaveFrom="translate-x-0"
+            leaveTo="-translate-x-full"
+            sidebarExpanded={sidebarExpanded}
+            setSidebarExpanded={setSidebarExpanded}
+            sidebarNavigation={sidebarNavigation}
+            setSidebarNavigation={setsidearNavigation}
+            mainNavigation={mainNavigation}
+            userSettingsNav={userSettingsNav}
+          />
+        </Transition.Root>
+
+        <Transition.Root show={!sidebarExpanded} as={Fragment}>
+          <Transition.Child
+            as={NarrowSidebar}
+            ref={createRef()} // Pass the ref prop directly
+            enter="transform transition duration-300"
+            enterFrom="translate-x-full"
+            enterTo="translate-x-0"
+            leave="transform transition duration-300"
+            leaveFrom="translate-x-0"
+            leaveTo="translate-x-full"
+            sidebarExpanded={sidebarExpanded}
+            setSidebarExpanded={setSidebarExpanded}
+            sidebarNavigation={sidebarNavigation}
+            setSidebarNavigation={setsidearNavigation}
+            mainNavigation={mainNavigation}
+            userSettingsNav={userSettingsNav}
+          />
+        </Transition.Root>
 
         {/* Search, Wallet, and main section */}
-        <div className="flex flex-1 flex-col lg:pl-64">
-          <div className="sticky top-0 z-10 flex h-16 flex-shrink-0 bg-white shadow">
+        <div
+          className={classNames(
+            sidebarExpanded
+              ? "flex flex-1 flex-col lg:pl-64"
+              : "flex flex-1 flex-col lg:pl-28"
+          )}
+        >
+          <div className="relative top-0 z-10 flex h-16 flex-shrink-0 bg-white shadow">
             <button
               type="button"
               className="border-r border-gray-200 px-4 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 lg:hidden"
@@ -314,7 +220,7 @@ export function DashboardLayout(props: DashboardLayoutProps) {
               <span className="sr-only">Open sidebar</span>
               <Bars3BottomLeftIcon className="h-6 w-6" aria-hidden="true" />
             </button>
-            <div className="flex flex-1 justify-between px-4">
+            <div className="flex flex-1 justify-between px-4 sm:px-6">
               <div className="flex flex-1">
                 <form className="flex w-full lg:ml-0" action="#" method="GET">
                   <label htmlFor="search-field" className="sr-only">
@@ -350,22 +256,108 @@ export function DashboardLayout(props: DashboardLayoutProps) {
               </div>
             </div>
           </div>
-
-          <main className="flex-1">
-            <div className="p-6">
-              <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <h1 className="text-2xl font-semibold text-gray-900">
-                  Dashboard
-                </h1>
-              </div>
-              <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 sm:p-6">
-                {/* Your content */}
-                {props.children}
-              </div>
-            </div>
-          </main>
+          <div className="relative z-0 flex flex-1 overflow-hidden p-6 ">
+            <main className="relative z-0 flex-1 overflow-y-auto focus:outline-none pr-4">
+              {props.children}
+            </main>
+            <aside className="relative hidden w-96 flex-shrink-0 overflow-y-auto xl:flex xl:flex-col px-4">
+              <OrderSection assets={assets} onSubmit={onSubmit} />
+            </aside>
+          </div>
         </div>
       </div>
     </Fragment>
   );
 }
+
+// <main className="flex-1">
+// <div className="p-6">
+//   <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+//     <h1 className="text-2xl font-semibold text-gray-900">
+//       Dashboard
+//     </h1>
+//   </div>
+//   <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 sm:p-6">
+//     {/* Your content */}
+//     {props.children}
+//   </div>
+// </div>
+// </main>
+
+// sidebar navigation
+// {/* <div className="flex flex-shrink-0 items-center px-4">
+// <Image
+//   className="h-auto w-auto"
+//   src={AbstradeLogo}
+//   alt="Abstrade"
+// />
+// </div>
+// <div className="mt-5 h-0 flex-1 overflow-y-auto">
+// <div>
+//   {/* Items above Divider */}
+//   <nav className="flex-1 space-y-1 px-2 pb-2">
+//     {barNavigation
+//       .filter(
+//         (item) =>
+//           userSettingsNav.findIndex(
+//             (_item) => _item.name == item.name
+//           ) > -1
+//       )
+//       .map((item) => (
+//         <a
+//           key={item.name}
+//           href={item.href}
+//           className={classNames(
+//             item.current
+//               ? "bg-gray-100 text-gray-900"
+//               : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+//             "group flex items-center rounded-md px-2 py-2 text-sm font-medium"
+//           )}
+//         >
+//           <item.icon
+//             className={classNames(
+//               item.current
+//                 ? "text-gray-500"
+//                 : "text-gray-400 group-hover:text-gray-500",
+//               "mr-3 h-6 w-6 flex-shrink-0"
+//             )}
+//             aria-hidden="true"
+//           />
+//           {item.name}
+//         </a>
+//       ))}
+//   </nav>
+//   <Divider
+//     Icon={
+//       sidebarExpanded ? ChevronLeftIcon : ChevronRightIcon
+//     }
+//     setSidebarExpanded={setSidebarExpanded}
+//   />
+//   {/* Items below Divider */}
+//   <nav className="flex-1 space-y-1 p-2">
+//     {userSettingsNav.map((item) => (
+//       <a
+//         key={item.name}
+//         href={item.href}
+//         className={classNames(
+//           item.current
+//             ? "bg-gray-100 text-gray-900"
+//             : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+//           "group flex items-center rounded-md px-2 py-2 text-sm font-medium"
+//         )}
+//       >
+//         <item.icon
+//           className={classNames(
+//             item.current
+//               ? "text-gray-500"
+//               : "text-gray-400 group-hover:text-gray-500",
+//             "mr-3 h-6 w-6 flex-shrink-0"
+//           )}
+//           aria-hidden="true"
+//         />
+//         {item.name}
+//       </a>
+//     ))}
+//   </nav>
+// </div>
+// </div> */}

@@ -107,14 +107,27 @@ export abstract class BaseAccountAPI {
     return this.isPhantom;
   }
 
+  async getAccountAddress(): Promise<string> {
+    if (this.senderAddress == null) {
+      if (this.accountAddress != null) {
+        this.senderAddress = this.accountAddress;
+      } else {
+        this.senderAddress = await this.getCounterFactualAddress();
+      }
+    }
+    return this.senderAddress;
+  }
+
   async getCounterFactualAddress(): Promise<string> {
-    const initCode = this.getAccountInitCode();
+    const initCode = await this.getAccountInitCode();
+    console.log(initCode);
     // use entryPoint to query account address (factory can provide a helper method to do the same, but
     // this method attempts to be generic
     try {
       await this.entryPointView.callStatic.getSenderAddress(initCode);
     } catch (e: any) {
       if (e.errorArgs) {
+        console.log(e);
         return e.errorArgs.sender;
       } else {
         throw e;
@@ -192,17 +205,6 @@ export abstract class BaseAccountAPI {
     const op = await resolveProperties(userOp);
     const chainId = await this.provider.getNetwork().then((net) => net.chainId);
     return getUserOpHash(op, this.entryPointAddress, chainId);
-  }
-
-  async getAccountAddress(): Promise<string> {
-    if (this.senderAddress == null) {
-      if (this.accountAddress != null) {
-        this.senderAddress = this.accountAddress;
-      } else {
-        this.senderAddress = await this.getCounterFactualAddress();
-      }
-    }
-    return this.senderAddress;
   }
 
   async estimateCreationGas(initCode: string | null): Promise<BigNumber> {
