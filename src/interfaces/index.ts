@@ -24,6 +24,7 @@ export interface Hooks {
   transactionReverted?: (txHash: string) => void;
   walletConnectSessionProposal?: (proposal: SessionProposal) => void;
 }
+import { ExternalProvider } from "@ethersproject/providers";
 /**
  * configuration params for wrapProvider and ZeroDev's ClientConfig
  * @note there is no active bundler on Gnosis Chain, so we must either create a custom bundler or work without it
@@ -166,6 +167,12 @@ export interface PartialUserOp {
  * For the src/pages section
  */
 
+/**
+ * Interfaces/types
+ *
+ *
+ */
+
 export interface BarNavItem {
   name: string;
   href: string;
@@ -174,9 +181,54 @@ export interface BarNavItem {
 }
 
 export interface SidebarNavigationProps {
+  sidebarExpanded: boolean;
   sidebarNavigation: BarNavItem[];
+  setSidebarExpanded: React.Dispatch<React.SetStateAction<boolean>>;
+  mainNavigation: BarNavItem[];
+  userSettingsNav: BarNavItem[];
+  setSidebarNavigation: React.Dispatch<
+    React.SetStateAction<
+      {
+        name: string;
+        href: string;
+        icon: React.ForwardRefExoticComponent<
+          React.SVGProps<SVGSVGElement> & {
+            title?: string | undefined;
+            titleId?: string | undefined;
+          }
+        >;
+        current: boolean;
+      }[]
+    >
+  >;
 }
 
 export interface DashboardLayoutProps {
   children: JSX.Element;
+}
+
+export interface handleSideBarToggleArgs {
+  item: BarNavItem;
+  sidebarNavigation: BarNavItem[];
+  setSidebarNavigation: React.Dispatch<
+    React.SetStateAction<
+      {
+        name: string;
+        href: string;
+        icon: React.ForwardRefExoticComponent<
+          React.SVGProps<SVGSVGElement> & {
+            title?: string | undefined;
+            titleId?: string | undefined;
+          }
+        >;
+        current: boolean;
+      }[]
+    >
+  >;
+}
+
+export interface DividerProps {
+  Icon: React.ForwardRefExoticComponent<React.SVGProps<SVGSVGElement>>;
+  setSidebarExpanded: React.Dispatch<React.SetStateAction<boolean>>;
+  sidebarExpanded: boolean;
 }

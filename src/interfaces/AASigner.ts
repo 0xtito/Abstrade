@@ -12,6 +12,7 @@ import { Web3AuthConfig } from ".";
 import { AAProvider } from "./AAProvider";
 // dont need to include (now)
 // import { Hooks } from "./ClientConfig";
+import { defineReadOnly } from "ethers/lib/utils.js";
 
 import { CustomHttpRpcClient } from "./CustomHttpRpcClient";
 import ethers_eip712_1 from "ethers-eip712";
@@ -42,7 +43,8 @@ export class AASigner extends Signer {
     this.AAProvider = AAProvider;
     this.httpRpcClient = CustomHttpRpcClient;
     this.smartAccountAPI = smartAccountAPI;
-    // this.provider = AAProvider;
+    // making AAProvider the provider property from Signer
+    defineReadOnly(this, "provider", AAProvider);
   }
   // delegate call is not a priority
   // delegateCopy(): AASigner {

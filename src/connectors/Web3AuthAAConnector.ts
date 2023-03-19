@@ -54,6 +54,7 @@ export class Web3AuthAAConnector extends Connector<
   initialChainId?: number;
   loginParams?: any;
   modalConfig?: any;
+  simpleAccountAPI?: SimpleAccountAPI;
 
   constructor(config: { chains: Chain[]; options: Web3AuthConfig }) {
     super(config);
@@ -62,7 +63,95 @@ export class Web3AuthAAConnector extends Connector<
     this.loginParams = config.options.loginParams || null;
     this.modalConfig = config.options.modalConfig || null;
     this.initialChainId = config.chains[0].id;
+    // this.init();
   }
+
+  // private async init() {
+  //   function isIWeb3AuthModal(obj: any): obj is IWeb3AuthModal {
+  //     return typeof obj.initModal !== "undefined";
+  //   }
+
+  //   try {
+  //     this.emit("message", {
+  //       type: "connecting",
+  //     });
+  //     console.log(this.web3AuthInstance.status);
+  //     if (this.web3AuthInstance.status === ADAPTER_STATUS.NOT_READY) {
+  //       if (isIWeb3AuthModal(this.web3AuthInstance)) {
+  //         await this.web3AuthInstance.initModal({
+  //           modalConfig: this.modalConfig,
+  //         });
+  //         await this.web3AuthInstance.init();
+  //       } else if (this.loginParams) {
+  //         // await this.web3AuthInstance.init();
+  //       } else {
+  //         // loglevel.error("please provide a valid loginParams when not using @web3auth/modal");
+  //         throw new UserRejectedRequestError(
+  //           "please provide a valid loginParams when not using @web3auth/modal"
+  //         );
+  //       }
+  //     }
+
+  //     // await this.web3AuthInstance.init();
+
+  //     let provider = this.web3AuthInstance.provider;
+
+  //     if (!provider) {
+  //       if (isIWeb3AuthModal(this.web3AuthInstance)) {
+  //         provider =
+  //           (await this.web3AuthInstance.connect()) as SafeEventEmitterProvider;
+  //       } else if (this.loginParams) {
+  //         // provider = (await this.web3AuthInstance.connectTo(
+  //         //   WALLET_ADAPTERS.OPENLOGIN,
+  //         //   this.loginParams
+  //         // )) as SafeEventEmitterProvider;
+  //       } else {
+  //         // loglevel.error("please provide a valid loginParams when not using @web3auth/modal");
+  //         throw new UserRejectedRequestError(
+  //           "please provide a valid loginParams when not using @web3auth/modal"
+  //         );
+  //       }
+  //     }
+
+  //     provider = provider as SafeEventEmitterProvider;
+
+  //     const defaultProvider = new ethers.providers.Web3Provider(provider);
+  //     const defaultSigner = defaultProvider.getSigner();
+
+  //     const signer = await this.getSigner();
+  //     const account = (await signer.getAddress()) as `0x${string}`;
+  //     provider.on("accountsChanged", this.onAccountsChanged.bind(this));
+  //     provider.on("chainChanged", this.onChainChanged.bind(this));
+  //     const chainId = await this.getChainId();
+  //     const unsupported = this.isChainUnsupported(chainId);
+
+  //     const customHttpRpcClient = new CustomHttpRpcClient(
+  //       entryPointAddress,
+  //       chainId ? chainId : await this.getChainId(),
+  //       this.chains[0].rpcUrls.default.http[0]
+  //       // hardcoding this for now
+  //     );
+
+  //     this.simpleAccountAPI = new SimpleAccountAPI({
+  //       entryPointAddress,
+  //       // accountAddress: await signer.getAddress(),
+  //       provider: defaultProvider!,
+  //       signer: signer,
+  //     });
+
+  //     // const simpleAccountAPI: SimpleAccountAPI = new SimpleAccountAPI({
+  //     //   entryPointAddress,
+  //     //   accountAddress: await signer.getAddress(),
+  //     //   provider: defaultProvider!,
+  //     //   signer: signer,
+  //     // });
+
+  //     // const simpleAccountAPIInit = await this.simpleAccountAPI.init();
+  //     await this.simpleAccountAPI.init();
+  //   } catch (error) {
+  //     console.log(error);
+  //   }
+  // }
 
   async connect({ chainId }: { chainId?: number } = {}): Promise<{
     account: `0x${string}`;
@@ -73,7 +162,7 @@ export class Web3AuthAAConnector extends Connector<
     provider: AAProvider;
   }> {
     // Helper function to check if an object is of type IWeb3AuthModal
-    function isIWeb3AuthModal(obj: any): obj is IWeb3AuthModal {
+    function isWeb3AuthModal(obj: any): obj is Web3Auth {
       return typeof obj.initModal !== "undefined";
     }
 
@@ -81,9 +170,10 @@ export class Web3AuthAAConnector extends Connector<
       this.emit("message", {
         type: "connecting",
       });
-
+      console.log(this.web3AuthInstance.status);
       if (this.web3AuthInstance.status === ADAPTER_STATUS.NOT_READY) {
-        if (isIWeb3AuthModal(this.web3AuthInstance)) {
+        console.log(isWeb3AuthModal(this.web3AuthInstance));
+        if (isWeb3AuthModal(this.web3AuthInstance)) {
           await this.web3AuthInstance.initModal({
             modalConfig: this.modalConfig,
           });
@@ -100,10 +190,10 @@ export class Web3AuthAAConnector extends Connector<
 
       // await this.web3AuthInstance.init();
 
-      let provider = this.web3AuthInstance.provider as SafeEventEmitterProvider;
+      let provider = this.web3AuthInstance.provider;
 
       if (!provider) {
-        if (isIWeb3AuthModal(this.web3AuthInstance)) {
+        if (isWeb3AuthModal(this.web3AuthInstance)) {
           provider =
             (await this.web3AuthInstance.connect()) as SafeEventEmitterProvider;
         } else if (this.loginParams) {
@@ -118,6 +208,8 @@ export class Web3AuthAAConnector extends Connector<
           );
         }
       }
+
+      provider = provider as SafeEventEmitterProvider;
 
       const defaultProvider = new ethers.providers.Web3Provider(provider);
       const defaultSigner = defaultProvider.getSigner();
@@ -136,12 +228,27 @@ export class Web3AuthAAConnector extends Connector<
         // hardcoding this for now
       );
 
-      const simpleAccountAPI: SimpleAccountAPI = new SimpleAccountAPI({
+      this.simpleAccountAPI = new SimpleAccountAPI({
         entryPointAddress,
-        accountAddress: await signer.getAddress(),
+        // accountAddress: await signer.getAddress(),
         provider: defaultProvider!,
         signer: signer,
       });
+
+      // const simpleAccountAPI: SimpleAccountAPI = new SimpleAccountAPI({
+      //   entryPointAddress,
+      //   accountAddress: await signer.getAddress(),
+      //   provider: defaultProvider!,
+      //   signer: signer,
+      // });
+
+      // const simpleAccountAPIInit = await this.simpleAccountAPI.init();
+      this.simpleAccountAPI = await this.simpleAccountAPI.init();
+
+      // return your smart wallet address
+      const accountAddress =
+        (await this.simpleAccountAPI?.getAccountAddress()) as `0x${string}`;
+      console.log("accountAddress", accountAddress);
 
       const _AAProvider = new AAProvider(
         chainId ? chainId : await this.getChainId(),
@@ -150,20 +257,21 @@ export class Web3AuthAAConnector extends Connector<
         defaultProvider,
         customHttpRpcClient,
         entryPointAddress,
-        simpleAccountAPI
+        this.simpleAccountAPI!
       );
-      _AAProvider.init();
+      const __AAProvider = await _AAProvider.init();
 
       return {
-        account,
+        account: accountAddress,
         chain: {
           id: chainId,
           unsupported,
         },
-        provider: _AAProvider,
+        provider: __AAProvider,
       };
     } catch (error) {
       // loglevel.error("error while connecting", error);
+      console.log(error);
       throw new UserRejectedRequestError("Something went wrong");
     }
 
@@ -243,7 +351,25 @@ export class Web3AuthAAConnector extends Connector<
         });
       }
 
+      let provider = this.web3AuthInstance.provider as SafeEventEmitterProvider;
+
+      const defaultProvider = new ethers.providers.Web3Provider(provider);
+
       const signer = this.provider.getSigner();
+
+      // const simpleAccountAPI: SimpleAccountAPI = new SimpleAccountAPI({
+      //   entryPointAddress,
+      //   provider: defaultProvider!,
+      //   signer: signer,
+      // });
+
+      // const acc = await this.simpleAccountAPI.init();
+
+      // return your smart wallet address
+      const accountAddress =
+        (await this.simpleAccountAPI?.getAccountAddress()) as `0x${string}`;
+      console.log("accountAddress", accountAddress);
+      return accountAddress;
 
       // const defaultProvider = new ethers.providers.Web3Provider(
       //   _safeAuth.getProvider() as ethers.providers.ExternalProvider
@@ -261,10 +387,30 @@ export class Web3AuthAAConnector extends Connector<
   }
   async getChainId(): Promise<number> {
     return new Promise(async (resolve, reject) => {
+      function isWeb3AuthModal(obj: any): obj is Web3Auth {
+        return typeof obj.initModal !== "undefined";
+      }
       try {
-        let provider = this.web3AuthInstance
-          .provider as SafeEventEmitterProvider;
-        const _chainId = await provider.request({
+        let provider = this.web3AuthInstance.provider;
+
+        if (!provider) {
+          if (isWeb3AuthModal(this.web3AuthInstance)) {
+            provider =
+              (await this.web3AuthInstance.connect()) as SafeEventEmitterProvider;
+          } else if (this.loginParams) {
+            // provider = (await this.web3AuthInstance.connectTo(
+            //   WALLET_ADAPTERS.OPENLOGIN,
+            //   this.loginParams
+            // )) as SafeEventEmitterProvider;
+          } else {
+            // loglevel.error("please provide a valid loginParams when not using @web3auth/modal");
+            throw new UserRejectedRequestError(
+              "please provide a valid loginParams when not using @web3auth/modal"
+            );
+          }
+        }
+
+        const _chainId = await provider!.request({
           method: "eth_chainId",
         });
 
@@ -280,14 +426,14 @@ export class Web3AuthAAConnector extends Connector<
       if (this.provider) {
         return this.provider;
       }
-      function isIWeb3AuthModal(obj: any): obj is IWeb3AuthModal {
+      function isWeb3AuthModal(obj: any): obj is Web3Auth {
         return typeof obj.initModal !== "undefined";
       }
 
-      let provider = this.web3AuthInstance.provider as SafeEventEmitterProvider;
+      let provider = this.web3AuthInstance.provider;
 
       if (!provider) {
-        if (isIWeb3AuthModal(this.web3AuthInstance)) {
+        if (isWeb3AuthModal(this.web3AuthInstance)) {
           provider =
             (await this.web3AuthInstance.connect()) as SafeEventEmitterProvider;
         } else if (this.loginParams) {
@@ -303,13 +449,13 @@ export class Web3AuthAAConnector extends Connector<
         }
       }
 
-      const defaultProvider = new ethers.providers.Web3Provider(provider);
+      const defaultProvider = new ethers.providers.Web3Provider(provider!);
       const _defaultSigner = defaultProvider.getSigner();
 
       const signer = await this.getSigner();
       const account = (await signer.getAddress()) as `0x${string}`;
-      provider.on("accountsChanged", this.onAccountsChanged.bind(this));
-      provider.on("chainChanged", this.onChainChanged.bind(this));
+      provider!.on("accountsChanged", this.onAccountsChanged.bind(this));
+      provider!.on("chainChanged", this.onChainChanged.bind(this));
       const chainId = await this.getChainId();
       const unsupported = this.isChainUnsupported(chainId);
 
@@ -320,12 +466,12 @@ export class Web3AuthAAConnector extends Connector<
         // hardcoding this for now
       );
 
-      const _simpleAccountAPI: SimpleAccountAPI = new SimpleAccountAPI({
-        entryPointAddress,
-        accountAddress: await signer.getAddress(),
-        provider: defaultProvider!,
-        signer: signer,
-      });
+      // const _simpleAccountAPI: SimpleAccountAPI = new SimpleAccountAPI({
+      //   entryPointAddress,
+      //   accountAddress: await signer.getAddress(),
+      //   provider: defaultProvider!,
+      //   signer: signer,
+      // });
 
       this.provider = new AAProvider(
         chainId ? chainId : await this.getChainId(),
@@ -334,10 +480,10 @@ export class Web3AuthAAConnector extends Connector<
         defaultProvider,
         _customHttpRpcClient,
         entryPointAddress,
-        _simpleAccountAPI
+        this.simpleAccountAPI!
       );
 
-      this.provider.init();
+      this.provider = await this.provider.init();
 
       return this.provider;
     } catch (error: any) {
@@ -346,14 +492,18 @@ export class Web3AuthAAConnector extends Connector<
   }
 
   async getSigner(): Promise<AASigner> {
-    function isIWeb3AuthModal(obj: any): obj is IWeb3AuthModal {
+    function isWeb3AuthModal(obj: any): obj is Web3Auth {
       return typeof obj.initModal !== "undefined";
+    }
+    console.log(this.provider);
+    if (this.provider) {
+      return this.provider.getSigner();
     }
 
     let provider = this.web3AuthInstance.provider as SafeEventEmitterProvider;
 
     if (!provider) {
-      if (isIWeb3AuthModal(this.web3AuthInstance)) {
+      if (isWeb3AuthModal(this.web3AuthInstance)) {
         provider =
           (await this.web3AuthInstance.connect()) as SafeEventEmitterProvider;
       } else if (this.loginParams) {
@@ -389,58 +539,19 @@ export class Web3AuthAAConnector extends Connector<
       this.chains[0].rpcUrls.default.http[0]
     );
 
-    const simpleAccountAPI: SimpleAccountAPI = new SimpleAccountAPI({
-      entryPointAddress,
-      accountAddress: await _defaultSigner.getAddress(),
-      provider: defaultProvider!,
-      signer: _defaultSigner,
-    });
-
-    if (!this.provider) {
-      function isIWeb3AuthModal(obj: any): obj is IWeb3AuthModal {
-        return typeof obj.initModal !== "undefined";
-      }
-
-      let provider = this.web3AuthInstance.provider as SafeEventEmitterProvider;
-
-      if (!provider) {
-        if (isIWeb3AuthModal(this.web3AuthInstance)) {
-          provider =
-            (await this.web3AuthInstance.connect()) as SafeEventEmitterProvider;
-        } else if (this.loginParams) {
-          // TODO: configure this
-          // provider = (await this.web3AuthInstance.connectTo(
-          //   WALLET_ADAPTERS.OPENLOGIN,
-          //   this.loginParams
-          // )) as SafeEventEmitterProvider;
-        } else {
-          // loglevel.error("please provide a valid loginParams when not using @web3auth/modal");
-          throw new UserRejectedRequestError(
-            "please provide a valid loginParams when not using @web3auth/modal"
-          );
-        }
-
-        const defaultProvider = new ethers.providers.Web3Provider(provider);
-        const _defaultSigner = defaultProvider.getSigner();
-
-        this.provider = new AAProvider(
-          _chainId,
-          { ...aaConfig, web3AuthInstance: this.web3AuthInstance },
-          _defaultSigner,
-          defaultProvider,
-          customHttpRpcClient,
-          entryPointAddress,
-          simpleAccountAPI
-        ) as AAProvider;
-      }
-    }
+    // const simpleAccountAPI: SimpleAccountAPI = new SimpleAccountAPI({
+    //   entryPointAddress,
+    //   accountAddress: await _defaultSigner.getAddress(),
+    //   provider: defaultProvider!,
+    //   signer: _defaultSigner,
+    // });
 
     return new AASigner(
       { ...aaConfig, web3AuthInstance: this.web3AuthInstance },
       _defaultSigner,
       this.provider!,
       customHttpRpcClient,
-      simpleAccountAPI
+      this.simpleAccountAPI!
     );
   }
   isAuthorized(): Promise<boolean> {

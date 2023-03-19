@@ -58,11 +58,12 @@ export class AAProvider extends BaseProvider {
       originalSigner,
       this,
       customHttpRpcClient,
-      new SimpleAccountAPI({
-        provider: this,
-        entryPointAddress: entryPointAddress,
-        signer: originalSigner,
-      })
+      smartAccountAPI
+      // new SimpleAccountAPI({
+      //   provider: this,
+      //   entryPointAddress: entryPointAddress,
+      //   signer: originalSigner,
+      // })
     );
   }
   /**
