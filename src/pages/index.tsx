@@ -1,19 +1,24 @@
-import React, { Fragment } from "react";
+import React, { Fragment, useEffect } from "react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useAccount } from "wagmi";
+import { useAccount, useConnect } from "wagmi";
 import { SignIn } from "../components/SignIn";
 
 import { Account } from "../components";
 
 function Page() {
   const { isConnected, connector } = useAccount();
+  const { connect, connectors } = useConnect();
 
   console.log("isConnected", isConnected);
+
+  useEffect(() => {
+    console.log(connector);
+  });
 
   return (
     <Fragment>
       <SignIn />
-      {isConnected && <Account />}
+      {<Account />}
       <button onClick={() => connector?.disconnect()}>
         {isConnected ? "disconnect" : ""}
       </button>

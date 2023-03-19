@@ -15,6 +15,7 @@ import AbstradeLogo from "../static/images/abstrade-v2-light.png";
 import Image from "next/image";
 import { AASigner } from "../interfaces/AASigner";
 import { Web3AuthAAConnector } from "../connectors/Web3AuthAAConnector";
+import { Web3Auth } from "@web3auth/modal";
 
 interface SafeAuthConnector extends Connector {
   safeAuth: any;
@@ -36,15 +37,17 @@ export function SignIn() {
         (connector) => connector.id === "web3auth"
       );
 
-      // console.log(web3auth!);
-
+      console.log(web3auth);
+      const signer: AASigner = await web3auth?.getSigner();
+      console.log(signer);
       if (web3auth) {
-        const signer: AASigner = await web3auth.getSigner();
+        // web3auth.connect();
+        // const signer: AASigner = await web3auth.getSigner();
+        // console.log(signer);
         // console.log(signer);
         // console.log(await signer.getAddress());
         // const _signer = signer.connect(signer.AAProvider);
         // console.log(await signer.getGasPrice());
-
         // const gas = await signer.getGasPrice();
         // const msg = await signer.signMessage("Hello World");
         // const msg = await signer.
@@ -54,7 +57,6 @@ export function SignIn() {
       // const stuff = await authKit?.connect();
       // console.log(stuff.kit.signOut());
     })();
-    //   authKit.SignIn();
   }, [isConnected]);
 
   useEffect(() => {
@@ -62,7 +64,6 @@ export function SignIn() {
       const web3auth = connectors.find(
         (connector) => connector.id === "web3auth"
       );
-      console.log(web3auth);
       console.log(await web3auth?.getAccount());
     })();
   }, []);

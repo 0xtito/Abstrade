@@ -72,5 +72,5 @@ export function TradingViewWidget(props: ChartProps) {
     areaBottomColor,
   ]);
 
-  return <div className="relative " ref={chartContainerRef} />;
+  return <div className="flex min-w-fit" ref={chartContainerRef} />;
 }

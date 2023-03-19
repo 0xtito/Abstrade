@@ -1,7 +1,7 @@
 import React from "react";
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "../../layouts";
-import { TradingViewWidget } from "../../components";
+import { TradingViewWidget, MainSection } from "../../components";
 
 export default function App() {
   // const {
@@ -30,7 +30,7 @@ export default function App() {
 
   return (
     <DashboardLayout>
-      <TradingViewWidget data={initialData} />
+      <MainSection />
     </DashboardLayout>
   );
 }

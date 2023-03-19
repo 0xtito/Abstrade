@@ -1,12 +1,13 @@
 import { Fragment, useEffect, useState } from "react";
-import { useAccount, useEnsName } from "wagmi";
+import { useAccount, useEnsName, useConnect } from "wagmi";
 
 export function Account() {
   const { address, connector } = useAccount();
   const [sig, setSig] = useState("");
+  const { connect, connectors } = useConnect();
 
   useEffect(() => {
-    console.log(address);
+    console.log(connectors);
   }, []);
 
   const signMsg = async () => {
