@@ -283,7 +283,10 @@ export abstract class BaseAccountAPI {
   async createSignedUserOp(
     info: DetailsForUserOp
   ): Promise<UserOperationStruct> {
-    return await this.signUserOp(await this.createUnsignedUserOp(info));
+    const unsignedUserOp = await this.createUnsignedUserOp(info);
+    console.log('++++ unsignedUserOp ++++')
+    console.log(unsignedUserOp);
+    return await this.signUserOp(unsignedUserOp);
   }
 
   /**

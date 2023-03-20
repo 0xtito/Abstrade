@@ -11,6 +11,10 @@ const config: HardhatUserConfig = {
     mumbai: {
       url: process.env.MUMBAI_URL!,
       accounts: [process.env.PRIVATE_KEY!],
+    },
+    gnosis: {
+      url: 'https://rpc.gnosis.gateway.fm',
+      accounts: [process.env.PRIVATE_KEY!]
     }
   },
 /*   etherscan: {

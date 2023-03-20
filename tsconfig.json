@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
-    "target": "es2020",
+    // "target": "es6", // for dapp
+    "target": "es2020", // for hardhat testing
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
@@ -8,7 +9,8 @@
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "esModuleInterop": true,
-    "module": "commonjs",
+    // "module": "esnext", // for dapp
+    "module": "commonjs", // for hardhat testing
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
