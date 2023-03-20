@@ -10,6 +10,9 @@ import { packUserOp, getUserOpHash } from "@account-abstraction/utils";
 import { BigNumberish } from "ethers";
 import { Provider } from "@ethersproject/providers";
 
+// import { SimpleAccountAPI } from "@account-abstraction/sdk";
+import { SimpleAccountAPI } from "./SimpleAccountAPI";
+
 import {
   UserOperationStruct,
   BaseAccountAPIParams,
@@ -21,7 +24,7 @@ const SIG_SIZE = 65;
 
 /**
  * BaseAccountAPI is a base class for all account types and provides common functionality across accounts
- * @note
+ * @note this is essentially the BaseAccountAPI from the "@account-abstraction/sdk" package
  */
 /**
  * Base class for all Smart Wallet ERC-4337 Clients to implement.
@@ -70,15 +73,15 @@ export abstract class BaseAccountAPI {
       params.provider
     ).connect(ethers.constants.AddressZero);
   }
-
-  // Add return types to all methods
-  async init(): Promise<BaseAccountAPI> {
-    if ((await this.provider.getCode(this.entryPointAddress)) === "0x") {
-      throw new Error(`entryPoint not deployed at ${this.entryPointAddress}`);
-    }
-    await this.getAccountAddress();
-    return this;
-  }
+  abstract init(): Promise<SimpleAccountAPI>;
+  // Add return types to all methods ( putting inside SimpleAccountAPI)
+  // async init(): Promise<BaseAccountAPI> {
+  //   if ((await this.provider.getCode(this.entryPointAddress)) === "0x") {
+  //     throw new Error(`entryPoint not deployed at ${this.entryPointAddress}`);
+  //   }
+  //   await this.getAccountAddress();
+  //   return this;
+  // }
 
   abstract encodeExecute(details: DetailsForUserOp): Promise<string>;
 
