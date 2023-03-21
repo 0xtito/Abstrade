@@ -124,6 +124,7 @@ contract LimitOrderAccount is
 
     /**
      * create a new limit order
+     * NOTE for native xDAI, use zero address
      */
     function createLimitOrder(
         address _tokenOut,
