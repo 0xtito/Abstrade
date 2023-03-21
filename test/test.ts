@@ -37,11 +37,11 @@ const SIMPLE_ACCOUNT_ADD = '0xCe4BCd8227059ee5797b81BaFaaB9353bBB13d98';
         nonce: '0',
         initCode: '0x',
         callData: calldata,
-        callGasLimit: 10000000, // auto-est 32018
-        verificationGasLimit: 10000000, // 35000 not enough
+        callGasLimit: 200000, // auto-est 32018
+        verificationGasLimit: 50000, // 35000 not enough
         preVerificationGas: '0', //paid to bundler
-        maxFeePerGas: ethers.utils.parseUnits('3', 'gwei'),
-        maxPriorityFeePerGas: ethers.utils.parseUnits('3', 'gwei'),
+        maxFeePerGas: ethers.utils.parseUnits('0', 'gwei'),
+        maxPriorityFeePerGas: ethers.utils.parseUnits('0', 'gwei'),
         paymasterAndData: '0x',
         signature: '',
     };
@@ -58,7 +58,7 @@ const SIMPLE_ACCOUNT_ADD = '0xCe4BCd8227059ee5797b81BaFaaB9353bBB13d98';
     console.log('+++++sending to entry point')
 
     const GAS_SETTINGS = {
-        gasLimit: 10000000,
+        gasLimit: 1000000,
         maxFeePerGas: ethers.utils.parseUnits("3", "gwei"),
         maxPriorityFeePerGas: ethers.utils.parseUnits("1", "gwei"),
     };

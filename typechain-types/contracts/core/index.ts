@@ -5,3 +5,4 @@ export type { EntryPoint } from "./EntryPoint";
 export type { ILimitOrderFiller } from "./ILimitOrderFiller";
 export type { LimitOrderAccount } from "./LimitOrderAccount";
 export type { LimitOrderAccountFactory } from "./LimitOrderAccountFactory";
+export type { LimitOrderSCW } from "./LimitOrderSCW";

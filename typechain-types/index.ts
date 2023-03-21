@@ -60,6 +60,8 @@ export type { LimitOrderAccount } from "./contracts/core/LimitOrderAccount";
 export { LimitOrderAccount__factory } from "./factories/contracts/core/LimitOrderAccount__factory";
 export type { LimitOrderAccountFactory } from "./contracts/core/LimitOrderAccountFactory";
 export { LimitOrderAccountFactory__factory } from "./factories/contracts/core/LimitOrderAccountFactory__factory";
+export type { LimitOrderSCW } from "./contracts/core/LimitOrderSCW";
+export { LimitOrderSCW__factory } from "./factories/contracts/core/LimitOrderSCW__factory";
 export type { WBTC } from "./contracts/erc-20/WBTC";
 export { WBTC__factory } from "./factories/contracts/erc-20/WBTC__factory";
 export type { XDAI } from "./contracts/erc-20/XDAI";

@@ -117,6 +117,10 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.LimitOrderAccountFactory__factory>;
     getContractFactory(
+      name: "LimitOrderSCW",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.LimitOrderSCW__factory>;
+    getContractFactory(
       name: "WBTC",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.WBTC__factory>;
@@ -259,6 +263,11 @@ declare module "hardhat/types/runtime" {
       address: string,
       signer?: ethers.Signer
     ): Promise<Contracts.LimitOrderAccountFactory>;
+    getContractAt(
+      name: "LimitOrderSCW",
+      address: string,
+      signer?: ethers.Signer
+    ): Promise<Contracts.LimitOrderSCW>;
     getContractAt(
       name: "WBTC",
       address: string,
