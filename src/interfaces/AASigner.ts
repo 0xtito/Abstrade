@@ -18,12 +18,13 @@ import { CustomHttpRpcClient } from "./CustomHttpRpcClient";
 import ethers_eip712_1 from "ethers-eip712";
 import { SimpleAccountAPI } from "../utils/SimpleAccountAPI";
 import { UserOperationStruct } from ".";
+import { ClientConfig } from ".";
 
 /**
  * Based on ethers Signer and [ZeroDevApp's SDK](https://zerodev.app/)
  */
 export class AASigner extends Signer {
-  readonly config: Omit<Web3AuthConfig, "projectId">;
+  readonly config: ClientConfig;
   readonly originalSigner: Signer;
   readonly AAProvider: AAProvider;
   readonly httpRpcClient: CustomHttpRpcClient;
@@ -31,7 +32,7 @@ export class AASigner extends Signer {
   address?: string;
 
   constructor(
-    config: Omit<Web3AuthConfig, "projectId">,
+    config: ClientConfig,
     originalSigner: Signer,
     AAProvider: AAProvider,
     CustomHttpRpcClient: CustomHttpRpcClient,

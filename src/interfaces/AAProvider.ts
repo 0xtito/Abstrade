@@ -1,8 +1,11 @@
 import {
   BaseProvider,
+  Provider,
+  JsonRpcProvider,
   TransactionReceipt,
   TransactionResponse,
 } from "@ethersproject/providers";
+
 import { Signer, BigNumber } from "ethers";
 import { Network } from "@ethersproject/networks";
 import { UserOperationStruct } from "@account-abstraction/contracts";
@@ -16,15 +19,17 @@ import { UserOperationEventListener } from "./UserOperationEventListener";
 import { SimpleAccountAPI } from "../utils/SimpleAccountAPI";
 import { AASigner } from "./AASigner";
 import { Web3AuthConfig } from ".";
+import { ethers } from "ethers";
+import { ClientConfig } from ".";
 
 /**
  * Based on ethersproject's Base Provider and [ZeroDevApp's SDK](https://zerodev.app/)
  */
 export class AAProvider extends BaseProvider {
   readonly chainId: number;
-  readonly config: Omit<Web3AuthConfig, "projectId">;
+  readonly config: ClientConfig;
   readonly originalSigner: Signer;
-  readonly originalProvider: BaseProvider;
+  readonly originalProvider: JsonRpcProvider;
   readonly httpRpcClient: CustomHttpRpcClient;
   // goinn to try only stored the entry point address, and not the whole type entry point?
   // readonly entryPoint: EntryPoint;
@@ -34,9 +39,9 @@ export class AAProvider extends BaseProvider {
   readonly signer: AASigner;
   constructor(
     chainId: number,
-    config: Omit<Web3AuthConfig, "projectId">,
+    config: ClientConfig,
     originalSigner: Signer,
-    originalProvider: BaseProvider,
+    originalProvider: JsonRpcProvider,
     customHttpRpcClient: CustomHttpRpcClient,
     entryPointAddress: string,
     smartAccountAPI: SimpleAccountAPI
@@ -65,6 +70,10 @@ export class AAProvider extends BaseProvider {
       //   signer: originalSigner,
       // })
     );
+
+    // const _signer = new ethers.providers.Web3Provider(
+    //   originalProvider
+    // ).getSigner();
   }
   /**
    * finish intializing the provider.
