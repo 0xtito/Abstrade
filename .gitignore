@@ -49,4 +49,4 @@ next-env.d.ts
 cache/
 src/artifacts
 artifacts
-
+*dbg.json
