@@ -104,7 +104,7 @@ contract LimitOrderAccount is
         uint256 value,
         bytes calldata func
     ) external {
-        _requireFromEntryPointOrOwner();
+        _requireFromEntryPointOwnerOrThis();
         _call(dest, value, func);
     }
 
@@ -115,7 +115,7 @@ contract LimitOrderAccount is
         address[] calldata dest,
         bytes[] calldata func
     ) external {
-        _requireFromEntryPointOrOwner();
+        _requireFromEntryPointOwnerOrThis();
         require(dest.length == func.length, "wrong array lengths");
         for (uint256 i = 0; i < dest.length; i++) {
             _call(dest[i], 0, func[i]);
@@ -124,6 +124,7 @@ contract LimitOrderAccount is
 
     /**
      * create a new limit order
+     * NOTE for native xDAI, use zero address
      */
     function createLimitOrder(
         address _tokenOut,
@@ -132,7 +133,7 @@ contract LimitOrderAccount is
         uint256 _orderAmount,
         uint256 _rate
     ) external {
-        _requireFromEntryPointOrOwner();
+        _requireFromEntryPointOwnerOrThis();
 
         limitOrders[orderIdCounter] = LimitOrder(
             _tokenOut,
@@ -159,7 +160,7 @@ contract LimitOrderAccount is
      * cancel an existing limit order
      */
     function cancelLimitOrder(uint256 _id) external {
-        _requireFromEntryPointOrOwner();
+        _requireFromEntryPointOwnerOrThis();
 
         LimitOrder storage limitOrder = limitOrders[_id];
         limitOrder.expiry = 0;
@@ -180,7 +181,7 @@ contract LimitOrderAccount is
      */
     function fillLimitOrder(
         uint256 _id,
-        address _filler,
+        address payable _filler,
         uint256 _fillAmount,
         bytes memory _params
     ) external nonReentrant {
@@ -193,15 +194,26 @@ contract LimitOrderAccount is
         );
 
         //require account has sufficient balance
-        uint256 tokenOutBalance = IERC20(order.tokenOut).balanceOf(
-            address(this)
-        );
+        uint256 tokenOutBalance;
+        if(order.tokenOut == address(0)) {
+            tokenOutBalance = address(this).balance;
+        } else {
+            tokenOutBalance = IERC20(order.tokenOut).balanceOf(
+                address(this)
+            );
+        }
         require(tokenOutBalance >= _fillAmount, "insufficient account funds");
 
         //store tokenIn balance for checking later
-        uint256 tokenInBalanceBefore = IERC20(order.tokenIn).balanceOf(
-            address(this)
-        );
+        uint256 tokenInBalanceBefore;
+        if(order.tokenIn == address(0)) {
+            tokenInBalanceBefore = address(this).balance;
+        } else {
+            tokenInBalanceBefore = IERC20(order.tokenIn).balanceOf(
+                address(this)
+            );
+        }
+         
         //calculate required amount of tokenIn to receive
         uint256 amountIn = _fillAmount.mul(order.rate).div(1e9);
 
@@ -211,7 +223,12 @@ contract LimitOrderAccount is
         if (order.filledAmount >= order.orderAmount) order.expiry = 0;
 
         //transfer _fillAmount of tokenOut to _filler
-        IERC20(order.tokenOut).transfer(_filler, _fillAmount);
+        if(order.tokenOut == address(0)) {
+            (bool success, bytes memory data) = _filler.call{value:_fillAmount}('');
+        } else {
+            IERC20(order.tokenOut).transfer(_filler, _fillAmount);
+        }
+        
 
         //call _filler's callback
         ILimitOrderFiller(_filler).executeOperation(
@@ -222,14 +239,19 @@ contract LimitOrderAccount is
         );
 
         //require balance of tokenIn has increased by amountIn
-        uint256 tokenInBalanceAfter = IERC20(order.tokenIn).balanceOf(
-            address(this)
-        );
+        uint256 tokenInBalanceAfter;
+        if(order.tokenIn == address(0)) {
+            tokenInBalanceAfter = address(this).balance;
+        } else {
+            tokenInBalanceAfter = IERC20(order.tokenIn).balanceOf(
+                address(this)
+            );
+        }
         require(
             tokenInBalanceAfter >= tokenInBalanceBefore.add(amountIn),
             "insufficient tokenIn received"
         );
-
+        
         emit UpdateLimitOrder(
             order.tokenOut,
             order.tokenIn,
@@ -257,9 +279,9 @@ contract LimitOrderAccount is
     }
 
     // Require the function call went through EntryPoint or owner
-    function _requireFromEntryPointOrOwner() internal view {
+    function _requireFromEntryPointOwnerOrThis() internal view {
         require(
-            msg.sender == address(entryPoint()) || msg.sender == owner,
+            msg.sender == address(entryPoint()) || msg.sender == owner || msg.sender == address(this),
             "account: not Owner or EntryPoint"
         );
     }
