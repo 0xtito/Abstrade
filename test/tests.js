@@ -53,7 +53,7 @@ describe("Abstrade", () => {
         wbtc = await WBTC.deploy();
         await wbtc.deployed();
     });
-    describe("Test functionality", () => {
+    describe("Test Limit Order Account contract by...", () => {
         before(async () => {
             order_id = 1;
             expiry = 1000000000000;
@@ -68,13 +68,13 @@ describe("Abstrade", () => {
             initial_filler_funds = BigInt(10*1e18); // 10 WBTC
             await wbtc.transfer(sampleFiller.address, initial_filler_funds);
             
-            sendUserOpToEntryPoint = async (method, params, owner, nonce) => {
+            sendUserOpToEntryPoint = async (method, params, owner) => {
                 simpleAccountAPI = new SimpleAccountAPI({
                     provider: ethers.provider, 
                     entryPointAddress: entryPoint.address,
                     owner: loa_contract_owner,
                 });
-                createUnsignedUserOp = (calldata) => {
+                createUnsignedUserOp = (calldata, nonce) => {
                     return {
                         sender: limitOrderAccount.address,
                         nonce: nonce,
@@ -95,12 +95,13 @@ describe("Abstrade", () => {
                     maxPriorityFeePerGas: ethers.utils.parseUnits("1", "gwei"),
                 };
                 calldata = limitOrderAccount.interface.encodeFunctionData(method, params);
-                const unsignedUserOp = createUnsignedUserOp(calldata);
+                nonce = await limitOrderAccount.nonce();
+                const unsignedUserOp = createUnsignedUserOp(calldata, nonce);
                 const op = await simpleAccountAPI.signUserOp(unsignedUserOp);
                 await entryPoint.handleOps([op], owner.getAddress(), GAS_SETTINGS);
             }
         });
-        describe("Directly from the owner EOA", () => {
+        describe("directly from the owner EOA", () => {
             it("should add a new order", async () => {
                 await limitOrderAccount.connect(loa_contract_owner).createLimitOrder(token_out, token_in, expiry, order_amount, rate);
                 let limit_order = await limitOrderAccount.limitOrders(order_id);
@@ -171,12 +172,26 @@ describe("Abstrade", () => {
                     .fillLimitOrder(order_id, sampleFiller.address, BigInt(300*1e18), 0))
                     .to.be.revertedWith("order is not valid");      
             }); 
+            it("should add 20 new orders using executeBatch()", async () => {
+                destination_array = new Array(20).fill(limitOrderAccount.address);
+                calldata = limitOrderAccount.interface.encodeFunctionData('createLimitOrder', [token_out, token_in, expiry, order_amount, rate]);
+                calldata_array = new Array(20).fill(calldata);
+                await limitOrderAccount.connect(loa_contract_owner).executeBatch(destination_array, calldata_array);
+                for (let i=1; i<=20; i++) {
+                    let limit_order = await limitOrderAccount.limitOrders(order_id + i);
+                    assert.equal(limit_order.tokenOut, token_out);
+                    assert.equal(limit_order.tokenIn, token_in);
+                    assert.equal(limit_order.expiry, expiry);
+                    assert.equal(limit_order.orderAmount, order_amount);
+                    assert.equal(limit_order.rate, rate);
+                }
+                order_id += 20;
+            }); 
         });
-        describe("By sending a user op to the Entry Point (low-level API)", () => {
+        describe("sending a user op to the Entry Point", () => {
             it("should add a new order", async () => {
                 order_id += 1;
-                nonce = 0;
-                await sendUserOpToEntryPoint('createLimitOrder', [token_out, token_in, expiry, order_amount, rate], loa_contract_owner, nonce);
+                await sendUserOpToEntryPoint('createLimitOrder', [token_out, token_in, expiry, order_amount, rate], loa_contract_owner);
                 let limit_order = await limitOrderAccount.limitOrders(order_id);
                 assert.equal(limit_order.tokenOut, token_out);
                 assert.equal(limit_order.tokenIn, token_in);
@@ -185,8 +200,7 @@ describe("Abstrade", () => {
                 assert.equal(limit_order.rate, rate);
             });
             it("should cancel an existing order", async () => {
-                nonce += 1;
-                await sendUserOpToEntryPoint('cancelLimitOrder', [order_id], loa_contract_owner, nonce);
+                await sendUserOpToEntryPoint('cancelLimitOrder', [order_id], loa_contract_owner);
                 let limit_order = await limitOrderAccount.limitOrders(order_id);
                 assert.equal(limit_order.expiry, 0);
             });
@@ -194,47 +208,66 @@ describe("Abstrade", () => {
                 await limitOrderAccount.connect(loa_contract_owner).createLimitOrder(token_out, token_in, expiry, order_amount, rate);
                 order_id += 1;
                 for (let i=0; i<3; i++) { 
-                    nonce += 1;
                     let limit_order = await limitOrderAccount.limitOrders(order_id);
                     let already_filled_amount = BigInt(limit_order.filledAmount);
                     let amount_to_fill = BigInt(300*1e18); // 300 xDAI
-                    await sendUserOpToEntryPoint('fillLimitOrder', [order_id, sampleFiller.address, amount_to_fill, 0], loa_contract_owner, nonce);
+                    await sendUserOpToEntryPoint('fillLimitOrder', [order_id, sampleFiller.address, amount_to_fill, 0], loa_contract_owner);
                     limit_order = await limitOrderAccount.limitOrders(order_id);
                     assert.equal(BigInt(limit_order.filledAmount), already_filled_amount + amount_to_fill);
                 } 
             });
             it("should partially fill an existing order selling native xDAI", async () => {
                 await limitOrderAccount
-                  .connect(loa_contract_owner)
-                  .createLimitOrder(
-                    "0x0000000000000000000000000000000000000000",
-                    token_in,
-                    expiry,
-                    order_amount,
-                    rate
-                  );
-                order_id += 1;
-                for (let i = 0; i < 3; i++) {
-                    nonce += 1;
-                    let limit_order = await limitOrderAccount.limitOrders(order_id);
-                    let already_filled_amount = BigInt(limit_order.filledAmount);
-                    let amount_to_fill = BigInt(1 * 1e18); // 1 xDAI
-                    await deployer_eoa.sendTransaction({
-                        from: deployer_eoa.address,
-                        to: limitOrderAccount.address,
-                        value: BigInt(2 * 1e18),
-                    });
+                    .connect(loa_contract_owner)
+                    .createLimitOrder(
+                        "0x0000000000000000000000000000000000000000",
+                        token_in,
+                        expiry,
+                        order_amount,
+                        rate
+                    );
+                    order_id += 1;
+                    for (let i = 0; i < 3; i++) {
+                        let limit_order = await limitOrderAccount.limitOrders(order_id);
+                        let already_filled_amount = BigInt(limit_order.filledAmount);
+                        let amount_to_fill = BigInt(1 * 1e18); // 1 xDAI
+                        await deployer_eoa.sendTransaction({
+                            from: deployer_eoa.address,
+                            to: limitOrderAccount.address,
+                            value: BigInt(2 * 1e18),
+                        });
 
-                await sendUserOpToEntryPoint('fillLimitOrder', [order_id, sampleFiller.address, amount_to_fill, 0], loa_contract_owner, nonce);
-          
-                limit_order = await limitOrderAccount.limitOrders(order_id);
-          
-                assert.equal(
-                    BigInt(limit_order.filledAmount),
-                    already_filled_amount + amount_to_fill
-                );
-                }
+                        await sendUserOpToEntryPoint('fillLimitOrder', [order_id, sampleFiller.address, amount_to_fill, 0], loa_contract_owner);
+                
+                        limit_order = await limitOrderAccount.limitOrders(order_id);
+                
+                        assert.equal(
+                            BigInt(limit_order.filledAmount),
+                            already_filled_amount + amount_to_fill
+                        );
+                    }
               }); 
-        });        
+            //   it("should add 20 new orders", async () => {
+            //     destination_array = new Array(1).fill(limitOrderAccount.address);
+            //     calldata = limitOrderAccount.interface.encodeFunctionData('createLimitOrder', [token_out, token_in, 123456789, order_amount, rate]);
+            //     calldata_array = new Array(1).fill(calldata);
+            //     // await sendUserOpToEntryPoint('execute', [limitOrderAccount.address, 0, calldata], loa_contract_owner);
+            //     // await sendUserOpToEntryPoint('execute', [limitOrderAccount.address, 0, calldata], loa_contract_owner);
+            //     // await sendUserOpToEntryPoint('execute', [limitOrderAccount.address, 0, calldata], loa_contract_owner);
+            //     await sendUserOpToEntryPoint('executeBatch', [destination_array, calldata_array], loa_contract_owner);
+            //     for (let i=1; i<=20; i++) {
+            //         let limit_order = await limitOrderAccount.limitOrders(order_id + i);
+            //         j = order_id + i;
+            //         console.log("Order #" + j);
+            //         console.log(limit_order);
+            //         // assert.equal(limit_order.tokenOut, token_out);
+            //         // assert.equal(limit_order.tokenIn, token_in);
+            //         // assert.equal(limit_order.expiry, 123456789);
+            //         // assert.equal(limit_order.orderAmount, order_amount);
+            //         // assert.equal(limit_order.rate, rate);
+            //     }
+            //     order_id += 20;
+            // }); 
+        });      
     });
 });
