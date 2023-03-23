@@ -1,7 +1,7 @@
 import React from "react";
 
 import { TradingViewWidget } from "../components/TradingViewWidget";
-import { Positions } from "./Positions";
+import { PositionsSection } from "./PositionsSection";
 
 const initialData = [
   { time: "2018-12-22", value: 32.51 },
@@ -20,7 +20,7 @@ export function MainSection() {
   return (
     <div className="flex flex-col w-full h-full">
       <TradingViewWidget data={initialData}></TradingViewWidget>
-      <Positions></Positions>
+      <PositionsSection />
     </div>
   );
 }
