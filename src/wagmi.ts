@@ -7,25 +7,14 @@ import { publicProvider } from "wagmi/providers/public";
 import { CoinbaseWalletConnector } from "wagmi/connectors/coinbaseWallet";
 import { InjectedConnector } from "wagmi/connectors/injected";
 import { MetaMaskConnector } from "wagmi/connectors/metaMask";
-// import { SafeConnector } from "wagmi/connectors/safe";
 
-// import { SafeAuthAAConnector } from "./connectors/SafeAuthAAConnector";
-// import { SafeAuthAAConnector } from "./connectors/TestSafeAuthAAConnector";
-import { Web3AuthAAConnector } from "./connectors/Web3AuthAAConnector";
-
-// web3auth
-import { Web3AuthConnector } from "@web3auth/web3auth-wagmi-connector";
-import { OpenloginAdapter } from "@web3auth/openlogin-adapter";
-import { Web3AuthCore } from "@web3auth/core";
 import {
-  CHAIN_NAMESPACES,
-  SafeEventEmitterProvider,
-  WALLET_ADAPTERS,
-} from "@web3auth/base";
+  GoogleAbstradeAAConnector,
+  GithubAbstradeAAConnector,
+  DiscordAbstradeAAConnector,
+} from "./connectors";
 
 const entryPointAddress: string = "0x0576a174D229E3cFA37253523E645A78A0C91B57";
-
-import { useEffect } from "react";
 
 /**
  * Currently messing around with wagmi, SafeAuthKit/web3authkit, and rainbowkit
@@ -38,49 +27,45 @@ import { useEffect } from "react";
  */
 
 const { chains, provider } = configureChains(
-  [goerli, gnosis, gnosisChiado],
+  [gnosis, gnosisChiado],
   [publicProvider()]
 );
 
-// const openloginAdapterInstance = new OpenloginAdapter({
-//   adapterSettings: {
-//     network: "testnet",
-//     uxMode: "popup",
-//     whiteLabel: {
-//       name: "Scaling Ethereum 2023",
-//       logoLight: "https://web3auth.io/images/w3a-L-Favicon-1.svg",
-//       logoDark: "https://web3auth.io/images/w3a-D-Favicon-1.svg",
-//       defaultLanguage: "en",
-//       dark: true, // whether to enable dark mode. defaultValue: false
-//     },
-//   },
-// });
+const connectors = [
+  new GoogleAbstradeAAConnector({
+    chains,
+    options: {
+      projectId: "1",
+      rpcProviderUrl: chains[0].rpcUrls.default.http[0],
+    },
+  }),
+  new DiscordAbstradeAAConnector({
+    chains,
+    options: {
+      projectId: "1",
+      rpcProviderUrl:
+        chains[0].id == 100
+          ? "https://rpc.gnosis.gateway.fm"
+          : chains[0].rpcUrls.default.http[0],
+    },
+  }),
+  new GithubAbstradeAAConnector({
+    chains,
+    options: {
+      projectId: "1",
+      rpcProviderUrl:
+        chains[0].id == 100
+          ? "https://rpc.gnosis.gateway.fm"
+          : chains[0].rpcUrls.default.http[0],
+    },
+  }),
+  new MetaMaskConnector({ chains }),
+];
 
-// web3AuthCore.configureAdapter(openloginAdapterInstance);
-
-// projectId: string;
-// /**
-//  * the entry point to use
-//  */
-// entryPointAddress: string;
-// accountFactoryAddress: string;
-
-// const connectors = [
-//   new Web3AuthAAConnector({
-//     chains,
-//     options: {
-//       projectId: "1",
-//       entryPointAddress: entryPointAddress,
-//       accountFactoryAddress: "0x09c58cf6be8E25560d479bd52B4417d15bCA2845",
-//     },
-//   }),
-//   new MetaMaskConnector({ chains }),
-// ];
-
-// export const client = createClient({
-//   autoConnect: false,
-//   connectors,
-//   provider,
-// });
+export const client = createClient({
+  autoConnect: false,
+  connectors,
+  provider,
+});
 
 export { chains, provider };
