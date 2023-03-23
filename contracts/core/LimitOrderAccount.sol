@@ -22,6 +22,7 @@ import "./ILimitOrderFiller.sol";
  *  this account is based on: https://github.com/eth-infinitism/account-abstraction/blob/develop/contracts/samples/SimpleAccount.sol
  *  with added functions for the owner to create limit orders that others can fill ala flashloans
  */
+
 contract LimitOrderAccount is
     BaseAccount,
     UUPSUpgradeable,
@@ -195,25 +196,23 @@ contract LimitOrderAccount is
 
         //require account has sufficient balance
         uint256 tokenOutBalance;
-        if(order.tokenOut == address(0)) {
+        if (order.tokenOut == address(0)) {
             tokenOutBalance = address(this).balance;
         } else {
-            tokenOutBalance = IERC20(order.tokenOut).balanceOf(
-                address(this)
-            );
+            tokenOutBalance = IERC20(order.tokenOut).balanceOf(address(this));
         }
         require(tokenOutBalance >= _fillAmount, "insufficient account funds");
 
         //store tokenIn balance for checking later
         uint256 tokenInBalanceBefore;
-        if(order.tokenIn == address(0)) {
+        if (order.tokenIn == address(0)) {
             tokenInBalanceBefore = address(this).balance;
         } else {
             tokenInBalanceBefore = IERC20(order.tokenIn).balanceOf(
                 address(this)
             );
         }
-         
+
         //calculate required amount of tokenIn to receive
         uint256 amountIn = _fillAmount.mul(order.rate).div(1e9);
 
@@ -223,12 +222,13 @@ contract LimitOrderAccount is
         if (order.filledAmount >= order.orderAmount) order.expiry = 0;
 
         //transfer _fillAmount of tokenOut to _filler
-        if(order.tokenOut == address(0)) {
-            (bool success, bytes memory data) = _filler.call{value:_fillAmount}('');
+        if (order.tokenOut == address(0)) {
+            (bool success, bytes memory data) = _filler.call{
+                value: _fillAmount
+            }("");
         } else {
             IERC20(order.tokenOut).transfer(_filler, _fillAmount);
         }
-        
 
         //call _filler's callback
         ILimitOrderFiller(_filler).executeOperation(
@@ -240,7 +240,7 @@ contract LimitOrderAccount is
 
         //require balance of tokenIn has increased by amountIn
         uint256 tokenInBalanceAfter;
-        if(order.tokenIn == address(0)) {
+        if (order.tokenIn == address(0)) {
             tokenInBalanceAfter = address(this).balance;
         } else {
             tokenInBalanceAfter = IERC20(order.tokenIn).balanceOf(
@@ -251,7 +251,7 @@ contract LimitOrderAccount is
             tokenInBalanceAfter >= tokenInBalanceBefore.add(amountIn),
             "insufficient tokenIn received"
         );
-        
+
         emit UpdateLimitOrder(
             order.tokenOut,
             order.tokenIn,
@@ -281,7 +281,9 @@ contract LimitOrderAccount is
     // Require the function call went through EntryPoint or owner
     function _requireFromEntryPointOwnerOrThis() internal view {
         require(
-            msg.sender == address(entryPoint()) || msg.sender == owner || msg.sender == address(this),
+            msg.sender == address(entryPoint()) ||
+                msg.sender == owner ||
+                msg.sender == address(this),
             "account: not Owner or EntryPoint"
         );
     }
