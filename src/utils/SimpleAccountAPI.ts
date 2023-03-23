@@ -3,6 +3,7 @@ import { BaseAccountAPI } from "./BaseAccountAPI";
 import SimpleAccountArtifact from "../contracts/artifacts/SimpleAccount.json";
 import { PaymasterAPI } from "@zerodevapp/sdk/dist/src/PaymasterAPI";
 import { ContractTransaction } from "ethers";
+import { IStakeManager } from "@account-abstraction/contracts";
 
 import {
   SimpleAccountFactory,
@@ -25,8 +26,8 @@ export class SimpleAccountAPI extends BaseAccountAPI {
 
   constructor(params: SimpleAccountAPIParams) {
     // removing overheads from params
-    const { provider, entryPointAddress, owner, factoryAddress } = params;
     super(params);
+    const { owner, factoryAddress } = params;
     this.factoryAddress = factoryAddress;
     this.owner = owner;
     // this.init();
@@ -34,13 +35,13 @@ export class SimpleAccountAPI extends BaseAccountAPI {
     this.name = "SimpleAccountAPI";
   }
 
-  async init(): Promise<SimpleAccountAPI> {
-    if ((await this.provider.getCode(this.entryPointAddress)) === "0x") {
-      throw new Error(`entryPoint not deployed at ${this.entryPointAddress}`);
-    }
-    await this.getAccountAddress();
-    return this;
-  }
+  // async init(): Promise<SimpleAccountAPI> {
+  //   if ((await this.provider.getCode(this.entryPointAddress)) === "0x") {
+  //     throw new Error(`entryPoint not deployed at ${this.entryPointAddress}`);
+  //   }
+  //   await this.getAccountAddress();
+  //   return this;
+  // }
 
   async _getAccountContract(): Promise<SimpleAccount> {
     if (this.accountContract == null) {
@@ -54,7 +55,7 @@ export class SimpleAccountAPI extends BaseAccountAPI {
 
   async getAccountInitCode(): Promise<string> {
     if (this.factory == null) {
-      if (this.factoryAddress != null) {
+      if (this.factoryAddress != null && this.factoryAddress !== "") {
         this.factory = SimpleAccountFactory__factory.connect(
           this.factoryAddress,
           this.provider
@@ -64,6 +65,8 @@ export class SimpleAccountAPI extends BaseAccountAPI {
         throw new Error("no factory to get initCode");
       }
     }
+    console.log("owner address", await this.owner.getAddress());
+    console.log("factory address", this.factory.address);
     return hexConcat([
       this.factory.address,
       this.factory.interface.encodeFunctionData("createAccount", [
@@ -99,17 +102,16 @@ export class SimpleAccountAPI extends BaseAccountAPI {
     dest: string,
     value: ethers.BigNumberish,
     func: ethers.utils.BytesLike
-  ): Promise<ContractTransaction> {
-    const simpleAccountContract = new ethers.Contract(
-      await this.owner.getAddress(),
-      SimpleAccountArtifact.abi,
-      this.provider
-    );
+  ): Promise<string> {
     const accountContract = await this._getAccountContract();
-    // const tx = await accountContract.execute(dest, value, func);
-    // return;
+    // return await this.execute(target, value!, data);
+    return accountContract.interface.encodeFunctionData("execute", [
+      dest,
+      value!,
+      func,
+    ]);
 
-    return await simpleAccountContract.execute(dest, value, func);
+    // return await simpleAccountContract.execute(dest, value, func);
   }
 
   // Execute a batch of transactions on behalf of the SimpleAccount
@@ -122,7 +124,7 @@ export class SimpleAccountAPI extends BaseAccountAPI {
   async encodeExecute(details: DetailsForUserOp): Promise<string> {
     const { target, value, data } = details;
     const accountContract = await this._getAccountContract();
-    // return this.execute(target, value!, data);
+    // return await this.execute(target, value!, data);
     return accountContract.interface.encodeFunctionData("execute", [
       target,
       value!,
@@ -131,13 +133,16 @@ export class SimpleAccountAPI extends BaseAccountAPI {
   }
 
   // Get the current deposit balance of the SimpleAccount in the EntryPoint.
-  async getDeposit(): Promise<ethers.BigNumber> {
-    const simpleAccountContract = new ethers.Contract(
-      await this.owner.getAddress(),
-      SimpleAccountArtifact.abi,
-      this.provider
+  async getDeposit(): Promise<IStakeManager.DepositInfoStructOutput> {
+    // const simpleAccountContract = new ethers.Contract(
+    //   await this.owner.getAddress(),
+    //   SimpleAccountArtifact.abi,
+    //   this.provider
+    // );
+    return await this.entryPointView.getDepositInfo(
+      await this.getAccountAddress()
     );
-    return await simpleAccountContract.getDeposit();
+    // return await simpleAccountContract.getDeposit();
   }
 
   // Add a deposit to the SimpleAccount in the EntryPoint.
@@ -147,11 +152,16 @@ export class SimpleAccountAPI extends BaseAccountAPI {
       SimpleAccountArtifact.abi,
       this.provider
     );
+    // return await this.entryPointView.addStake(
+    //   await this.getAccountAddress()
+    // );
+
     await simpleAccountContract.addDeposit({ value });
   }
 
   async signUserOpHash(userOpHash: string): Promise<string> {
     // const signer = this.provider.originalSigner;
+    console.log(this.owner);
     const signature = await this.owner.signMessage(userOpHash);
     return signature;
   }

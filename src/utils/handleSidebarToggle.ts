@@ -8,7 +8,6 @@ export const handleSideBarToggle = (args: handleSideBarToggleArgs) => {
     if (item.name == _item.name) _item.current = true;
     return _item;
   });
-  console.log(newNav);
   // item.current = true;
   setSidebarNavigation(newNav);
 };
