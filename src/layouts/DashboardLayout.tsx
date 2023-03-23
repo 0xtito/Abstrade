@@ -1,84 +1,68 @@
-import React, { useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { Fragment, useState, createRef } from "react";
 import { Dialog, Menu, Transition } from "@headlessui/react";
 import {
   Bars3BottomLeftIcon,
   BellIcon,
-  FolderIcon,
-  HomeIcon,
   XMarkIcon,
-  Squares2X2Icon,
-  CubeIcon,
-  CurrencyDollarIcon,
-  CogIcon,
-  ArrowRightOnRectangleIcon,
-  ChevronRightIcon,
-  ChevronLeftIcon,
 } from "@heroicons/react/24/outline";
 import { MagnifyingGlassIcon } from "@heroicons/react/20/solid";
-import Image from "next/image";
 
 import {
   WalletDropDown,
-  Divider,
   WideSidebar,
-  NarrowSidebar,
   OrderSection,
+  ConfirmOrderModal,
 } from "../components";
-// import AbstradeLogo from "../static/images/abstrade_logo_light.png";
-import AbstradeLogo from "../static/images/abstrade-v2-light.png";
-import { BarNavItem, DashboardLayoutProps } from "../interfaces";
+
+import { mainNavigation, assets, userSettingsNav } from "../utils/constants";
+
+import { DashboardLayoutProps } from "../interfaces";
 import { classNames } from "../utils";
+import { useAccount } from "wagmi";
 
-const assets = ["ETH", "BTC"];
-
-const mainNavigation = [
-  { name: "Home", href: "#", icon: HomeIcon, current: false },
-  { name: "Dashboard", href: "#", icon: Squares2X2Icon, current: true },
-  { name: "Place Orders", href: "#", icon: FolderIcon, current: false },
-  { name: "Orders", href: "#", icon: CubeIcon, current: false },
-  { name: "Fiat On-ramp", href: "#", icon: CurrencyDollarIcon, current: false },
-];
-const userSettingsNav = [
-  { name: "Settings", href: "#", icon: CogIcon, current: false },
-  {
-    name: "Log Out",
-    href: "#",
-    icon: ArrowRightOnRectangleIcon,
-    current: false,
-  },
-];
 const fullBarNav = mainNavigation.concat(userSettingsNav);
-console.log(fullBarNav);
-
-const userNavigation = [
-  { name: "Your Profile", href: "#" },
-  { name: "Settings", href: "#" },
-  { name: "Sign out", href: "#" },
-];
-
-const onSubmit = (asset: string, price: number, amount: number) => {
-  console.log(asset, price, amount);
-};
 
 export function DashboardLayout(props: DashboardLayoutProps) {
+  const { isConnected, connector } = useAccount();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarNavigation, setsidearNavigation] = useState(fullBarNav);
-  const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const [sidebarExpanded, setSidebarExpanded] = useState(true);
+  const [openModal, setOpenModal] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
   const sidebar = createRef();
-  // const handleSideBarToggle = (item: BarNavItem) => {
-  //   const newNav = barNavigation.map((_item) => {
-  //     _item.current = false;
-  //     if (item.name == _item.name) _item.current = true;
-  //     return _item;
-  //   });
-  //   console.log(newNav);
-  //   // item.current = true;
-  //   setBarNavigation(newNav);
-  // };
+  const [order, setOrder] = useState({
+    pair: "",
+    price: 0,
+    amount: 0,
+    total: 0,
+  });
+
+  useEffect(() => {
+    console.log(connector);
+  }, [isConnected]);
+
+  const onSubmit = (
+    pair: string,
+    price: number,
+    amount: number,
+    total: number
+  ) => {
+    setOrder({ pair, price, amount, total });
+    setOpenModal(true);
+  };
 
   return (
     <Fragment>
+      {/* Order Modal */}
+      {openModal && (
+        <ConfirmOrderModal
+          orderInfo={order}
+          setOpen={setOpenModal}
+          open={openModal}
+          setConfirmed={setConfirmed}
+        />
+      )}
       <div>
         {/* mobile config */}
         <Transition.Root show={sidebarOpen} as={Fragment}>
@@ -142,9 +126,18 @@ export function DashboardLayout(props: DashboardLayoutProps) {
           </Dialog>
         </Transition.Root>
 
-        {/* Make a sidebar that can expand, compress. Giving users more room to work with, helpful for our design as well*/}
-
         {/* Static sidebar for desktop */}
+        <WideSidebar
+          sidebarExpanded={sidebarExpanded}
+          setSidebarExpanded={setSidebarExpanded}
+          sidebarNavigation={sidebarNavigation}
+          setSidebarNavigation={setsidearNavigation}
+          mainNavigation={mainNavigation}
+          userSettingsNav={userSettingsNav}
+        />
+
+        {/* Make a sidebar that can expand, compress. Giving users more room to work with, helpful for our design as well*/}
+        {/* Probably not going to implement in production */}
         {/* <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col"> */}
         {/* {sidebarExpanded ? (
           <WideSidebar
@@ -165,7 +158,7 @@ export function DashboardLayout(props: DashboardLayoutProps) {
             userSettingsNav={userSettingsNav}
           />
         )} */}
-        <Transition.Root show={sidebarExpanded} as={Fragment}>
+        {/* <Transition.Root show={sidebarExpanded} as={Fragment}>
           <Transition.Child
             as={WideSidebar}
             ref={createRef()} // Pass the ref prop directly
@@ -201,7 +194,7 @@ export function DashboardLayout(props: DashboardLayoutProps) {
             mainNavigation={mainNavigation}
             userSettingsNav={userSettingsNav}
           />
-        </Transition.Root>
+        </Transition.Root> */}
 
         {/* Search, Wallet, and main section */}
         <div
@@ -260,7 +253,7 @@ export function DashboardLayout(props: DashboardLayoutProps) {
             <main className="relative z-0 flex-1 overflow-y-auto focus:outline-none pr-4">
               {props.children}
             </main>
-            <aside className="relative hidden w-96 flex-shrink-0 overflow-y-auto xl:flex xl:flex-col px-4">
+            <aside className="relative hidden w-96 flex-shrink-0 overflow-y-auto lg:flex lg:flex-col px-4">
               <OrderSection assets={assets} onSubmit={onSubmit} />
             </aside>
           </div>
@@ -269,95 +262,3 @@ export function DashboardLayout(props: DashboardLayoutProps) {
     </Fragment>
   );
 }
-
-// <main className="flex-1">
-// <div className="p-6">
-//   <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-//     <h1 className="text-2xl font-semibold text-gray-900">
-//       Dashboard
-//     </h1>
-//   </div>
-//   <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 sm:p-6">
-//     {/* Your content */}
-//     {props.children}
-//   </div>
-// </div>
-// </main>
-
-// sidebar navigation
-// {/* <div className="flex flex-shrink-0 items-center px-4">
-// <Image
-//   className="h-auto w-auto"
-//   src={AbstradeLogo}
-//   alt="Abstrade"
-// />
-// </div>
-// <div className="mt-5 h-0 flex-1 overflow-y-auto">
-// <div>
-//   {/* Items above Divider */}
-//   <nav className="flex-1 space-y-1 px-2 pb-2">
-//     {barNavigation
-//       .filter(
-//         (item) =>
-//           userSettingsNav.findIndex(
-//             (_item) => _item.name == item.name
-//           ) > -1
-//       )
-//       .map((item) => (
-//         <a
-//           key={item.name}
-//           href={item.href}
-//           className={classNames(
-//             item.current
-//               ? "bg-gray-100 text-gray-900"
-//               : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
-//             "group flex items-center rounded-md px-2 py-2 text-sm font-medium"
-//           )}
-//         >
-//           <item.icon
-//             className={classNames(
-//               item.current
-//                 ? "text-gray-500"
-//                 : "text-gray-400 group-hover:text-gray-500",
-//               "mr-3 h-6 w-6 flex-shrink-0"
-//             )}
-//             aria-hidden="true"
-//           />
-//           {item.name}
-//         </a>
-//       ))}
-//   </nav>
-//   <Divider
-//     Icon={
-//       sidebarExpanded ? ChevronLeftIcon : ChevronRightIcon
-//     }
-//     setSidebarExpanded={setSidebarExpanded}
-//   />
-//   {/* Items below Divider */}
-//   <nav className="flex-1 space-y-1 p-2">
-//     {userSettingsNav.map((item) => (
-//       <a
-//         key={item.name}
-//         href={item.href}
-//         className={classNames(
-//           item.current
-//             ? "bg-gray-100 text-gray-900"
-//             : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
-//           "group flex items-center rounded-md px-2 py-2 text-sm font-medium"
-//         )}
-//       >
-//         <item.icon
-//           className={classNames(
-//             item.current
-//               ? "text-gray-500"
-//               : "text-gray-400 group-hover:text-gray-500",
-//             "mr-3 h-6 w-6 flex-shrink-0"
-//           )}
-//           aria-hidden="true"
-//         />
-//         {item.name}
-//       </a>
-//     ))}
-//   </nav>
-// </div>
-// </div> */}
