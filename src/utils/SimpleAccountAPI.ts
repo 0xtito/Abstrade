@@ -11,7 +11,7 @@ import {
   SimpleAccountFactory__factory,
   SimpleAccount,
 } from "@account-abstraction/contracts";
-import { hexConcat } from "ethers/lib/utils.js";
+import { arrayify, hexConcat } from "ethers/lib/utils.js";
 
 import { SimpleAccountAPIParams, DetailsForUserOp } from "../interfaces";
 
@@ -162,7 +162,7 @@ export class SimpleAccountAPI extends BaseAccountAPI {
   async signUserOpHash(userOpHash: string): Promise<string> {
     // const signer = this.provider.originalSigner;
     console.log(this.owner);
-    const signature = await this.owner.signMessage(userOpHash);
+    const signature = await this.owner.signMessage(arrayify(userOpHash));
     return signature;
   }
 
