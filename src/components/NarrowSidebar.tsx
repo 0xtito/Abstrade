@@ -46,7 +46,6 @@ export const NarrowSidebar = forwardRef(
                 .filter(
                   (fullBar_item) =>
                     mainNavigation.findIndex((_item) => {
-                      console.log(_item.name, fullBar_item.name);
                       return _item.name == fullBar_item.name;
                     }) > -1
                 )
@@ -92,7 +91,6 @@ export const NarrowSidebar = forwardRef(
                 .filter(
                   (fullBar_item) =>
                     userSettingsNav.findIndex((_item) => {
-                      console.log(_item.name, fullBar_item.name);
                       return _item.name == fullBar_item.name;
                     }) > -1
                 )

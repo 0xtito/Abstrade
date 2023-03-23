@@ -17,6 +17,9 @@ interface ChartProps {
   };
 }
 
+/**
+ * STILL NEED TO CONFIGURE THIS COMPONENT
+ */
 export function TradingViewWidget(props: ChartProps) {
   const {
     data,

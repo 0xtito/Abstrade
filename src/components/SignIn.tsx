@@ -8,65 +8,10 @@ import {
   GithubLogo,
   TwitterLogo,
 } from "../static/images";
-import { Connector } from "wagmi";
-import { Signer } from "ethers";
-import * as ethers from "ethers";
-import AbstradeLogo from "../static/images/abstrade-v2-light.png";
-import Image from "next/image";
-import { AASigner } from "../interfaces/AASigner";
-import { Web3AuthAAConnector } from "../connectors/Web3AuthAAConnector";
-import { Web3Auth } from "@web3auth/modal";
-
-interface SafeAuthConnector extends Connector {
-  safeAuth: any;
-}
+import { useRouter } from "next/router";
 
 export function SignIn() {
   const { connect, connectors } = useConnect();
-  const { isConnected } = useAccount();
-
-  // const authKit = connectors.find((connector) => connector.id === "safeAA");
-
-  useEffect(() => {
-    // if (authKit) {
-    //   connect({ connector: authKit });
-    // }
-    // console.log(authKit);
-    (async () => {
-      const web3auth = connectors.find(
-        (connector) => connector.id === "web3auth"
-      );
-
-      console.log(web3auth);
-      const signer: AASigner = await web3auth?.getSigner();
-      console.log(signer);
-      if (web3auth) {
-        // web3auth.connect();
-        // const signer: AASigner = await web3auth.getSigner();
-        // console.log(signer);
-        // console.log(signer);
-        // console.log(await signer.getAddress());
-        // const _signer = signer.connect(signer.AAProvider);
-        // console.log(await signer.getGasPrice());
-        // const gas = await signer.getGasPrice();
-        // const msg = await signer.signMessage("Hello World");
-        // const msg = await signer.
-        // console.log(ethers.utils.formatEther(gas));
-      }
-
-      // const stuff = await authKit?.connect();
-      // console.log(stuff.kit.signOut());
-    })();
-  }, [isConnected]);
-
-  useEffect(() => {
-    (async () => {
-      const web3auth = connectors.find(
-        (connector) => connector.id === "web3auth"
-      );
-      console.log(await web3auth?.getAccount());
-    })();
-  }, []);
 
   const socialProviderAndLogo = {
     google: <GoogleLogo />,
@@ -78,13 +23,13 @@ export function SignIn() {
 
   return (
     <Fragment>
-      <div className="flex min-h-full flex-col justify-center py-12 sm:px-6 lg:px-8 ">
+      <div className="flex min-h-full flex-col justify-center sm:px-6 lg:px-8">
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
-          <Image
+          {/* <Image moved this too the main index.tsx page
             className="mx-auto h-auto w-auto"
             src={AbstradeLogo}
             alt="Your Company"
-          />
+          /> */}
           <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
             A new era for web3 trading:
           </h2>
@@ -94,6 +39,31 @@ export function SignIn() {
               <WalletDropDown>create your smart account</WalletDropDown>
             </span>
           </div>
+        </div>
+        <div className="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80">
+          <svg
+            className="relative left-[calc(50%-11rem)] -z-10 h-[21.1875rem] max-w-none -translate-x-1/2 rotate-[30deg] sm:left-[calc(50%-30rem)] sm:h-[42.375rem]"
+            viewBox="0 0 1155 678"
+          >
+            <path
+              fill="url(#45de2b6b-92d5-4d68-a6a0-9b9b2abad533)"
+              fillOpacity=".3"
+              d="M317.219 518.975L203.852 678 0 438.341l317.219 80.634 204.172-286.402c1.307 132.337 45.083 346.658 209.733 145.248C936.936 126.058 882.053-94.234 1031.02 41.331c119.18 108.451 130.68 295.337 121.53 375.223L855 299l21.173 362.054-558.954-142.079z"
+            />
+            <defs>
+              <linearGradient
+                id="45de2b6b-92d5-4d68-a6a0-9b9b2abad533"
+                x1="1155.49"
+                x2="-78.208"
+                y1=".177"
+                y2="474.645"
+                gradientUnits="userSpaceOnUse"
+              >
+                <stop stopColor="#9089FC" />
+                <stop offset={1} stopColor="#FF80B5" />
+              </linearGradient>
+            </defs>
+          </svg>
         </div>
         <div className="mt-8 border-1 border-gray-200 rounded-lg p-4 shadow-2xl sm:mx-auto sm:w-full sm:max-w-md">
           <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
@@ -110,6 +80,7 @@ export function SignIn() {
                     key={item.id}
                     onClick={() => {
                       connect({ connector: item });
+                      console.log(item);
                     }}
                     className="inline-flex w-full justify-center align-middle rounded-md bg-white py-2 px-4 text-gray-500 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-offset-0 hover:cursor-pointer"
                   >
