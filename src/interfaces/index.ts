@@ -28,6 +28,8 @@ export interface Hooks {
 }
 import { ExternalProvider } from "@ethersproject/providers";
 import { GasOverheads } from "@account-abstraction/sdk";
+import { JsonRpcProvider } from "@ethersproject/providers";
+
 /**
  * configuration params for wrapProvider and ZeroDev's ClientConfig
  * @note there is no active bundler on Gnosis Chain, so we must either create a custom bundler or work without it
@@ -167,7 +169,7 @@ export interface DetailsForUserOp {
 }
 
 export interface BaseAccountAPIParams {
-  provider: Provider;
+  provider: JsonRpcProvider;
   entryPointAddress: string;
   accountAddress?: string;
   overheads?: Partial<GasOverheads>;

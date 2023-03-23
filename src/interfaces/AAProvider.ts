@@ -46,6 +46,16 @@ export class AAProvider extends BaseProvider {
     entryPointAddress: string,
     smartAccountAPI: SimpleAccountAPI
   ) {
+    console.log(
+      "AAProvider constructor",
+      chainId,
+      config,
+      originalSigner,
+      originalProvider,
+      customHttpRpcClient,
+      entryPointAddress,
+      smartAccountAPI
+    );
     super({
       chainId: chainId,
       name: "ERC-4337 Custom Network",
@@ -64,16 +74,7 @@ export class AAProvider extends BaseProvider {
       this,
       customHttpRpcClient,
       smartAccountAPI
-      // new SimpleAccountAPI({
-      //   provider: this,
-      //   entryPointAddress: entryPointAddress,
-      //   signer: originalSigner,
-      // })
     );
-
-    // const _signer = new ethers.providers.Web3Provider(
-    //   originalProvider
-    // ).getSigner();
   }
   /**
    * finish intializing the provider.
@@ -204,27 +205,6 @@ export class AAProvider extends BaseProvider {
         return txReceipt;
       },
     };
-
-    // return new Promise((resolve, reject) => {
-    //   const resolveWithHooks = async (receipt: TransactionReceipt) => {
-    //     this.config.hooks?.transactionConfirmed?.call(
-    //       this.config,
-    //       userOp1.txHash
-    //     );
-    //     resolve(receipt);
-    //   };
-    //   const rejectWithHooks = (err: any) => {
-    //     this.config.hooks?.transactionReverted?.call(this.config, userOp1.txHash);
-    //     reject(err);
-    //   };
-    //   const interval = setInterval(async () => {
-    //     const receipt = await this.getTransactionReceipt(userOp1.txHash);
-    //     if (receipt) {
-    //       clearInterval(interval);
-    //       resolveWithHooks(receipt);
-    //     }
-    //   }, 1000);
-    // });
   }
 
   detectNetwork(): Promise<Network> {

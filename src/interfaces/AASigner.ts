@@ -68,8 +68,8 @@ export class AASigner extends Signer {
     } else {
       transaction.gasPrice = 0;
     }
+    console.log(transaction);
 
-    // `populateTransaction` internally calls `estimateGas`
     const tx = await this.populateTransaction(transaction);
 
     await this.verifyAllNecessaryFields(tx);
@@ -122,8 +122,9 @@ export class AASigner extends Signer {
   }
   unwrapError(errorIn: any): Error {
     if (!errorIn.body) {
-      const parsedError = JSON.parse(errorIn.body);
-      return parsedError;
+      // const parsedError = JSON.parse(errorIn.body);
+      // return parsedError;
+      return errorIn;
     }
     const error = errorIn as Error;
     if (error.message) {
@@ -170,6 +171,7 @@ export class AASigner extends Signer {
   async signTransaction(
     transaction: Deferrable<TransactionRequest>
   ): Promise<string> {
+    console.log("hi");
     return this.originalSigner.signTransaction(transaction);
   }
   async signUserOperation(userOperation: UserOperationStruct): Promise<string> {

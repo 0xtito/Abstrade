@@ -1,5 +1,8 @@
-import { ethers } from "ethers";
-import { EntryPoint__factory } from "@account-abstraction/contracts";
+import { ethers, Signer } from "ethers";
+import {
+  EntryPoint,
+  EntryPoint__factory,
+} from "@account-abstraction/contracts";
 import {
   UserOperationStruct,
   EstimateUserOpGasResult,
@@ -7,6 +10,7 @@ import {
 } from "./";
 import { deepHexlify } from "@account-abstraction/utils";
 import { resolveProperties } from "ethers/lib/utils.js";
+import { JsonRpcProvider } from "@ethersproject/providers";
 
 const EntryPointAbi = EntryPoint__factory.abi;
 
@@ -18,29 +22,39 @@ export class CustomHttpRpcClient {
   readonly entryPointAddress: string;
   readonly chainId: number;
   private readonly userOpJsonRpcProvider: ethers.providers.JsonRpcProvider;
-  private readonly entryPointContract: ethers.Contract;
+  private readonly originalSigner: Signer;
+  private readonly entryPointContract: EntryPoint;
   initializing: Promise<void>;
 
   constructor(
     entryPointAddress: string,
     chainId: number,
-    providerUrl?: string,
+    provider: JsonRpcProvider,
+    signer: Signer,
     bundlerUrl?: string
   ) {
     this.entryPointAddress = entryPointAddress;
     this.chainId = chainId;
     this.bundlerUrl = bundlerUrl || "default_bundler_url";
-    providerUrl = providerUrl || "http://localhost:8545";
-    this.userOpJsonRpcProvider = new ethers.providers.JsonRpcProvider(
-      providerUrl
-    );
+    this.userOpJsonRpcProvider = provider;
+    this.originalSigner = signer;
+    // providerUrl = providerUrl || "http://localhost:8545";
+    // this.userOpJsonRpcProvider = new ethers.providers.JsonRpcProvider(
+    //   providerUrl
+    // );
 
     // Create an instance of the EntryPoint contract
-    this.entryPointContract = new ethers.Contract(
-      entryPointAddress,
-      EntryPointAbi,
-      this.userOpJsonRpcProvider
-    );
+    // this.entryPointContract = new ethers.Contract(
+    //   entryPointAddress,
+    //   EntryPointAbi,
+    //   this.userOpJsonRpcProvider
+    // );
+
+    this.entryPointContract = EntryPoint__factory.connect(
+      this.entryPointAddress,
+      this.originalSigner
+    ).connect(ethers.constants.AddressZero);
+    // console.log(this.entryPointView.address);
 
     this.initializing = this.validateChainId();
   }
@@ -66,13 +80,53 @@ export class CustomHttpRpcClient {
    */
   async sendUserOpToEntryPoint(userOp1: UserOperationStruct): Promise<string> {
     // Send the UserOperation to the entry point
-    const tx = await this.entryPointContract.sendUserOp(userOp1);
+    // const tx = await this.entryPointContract.sendUserOp(userOp1);
+    await this.initializing;
+
+    console.log("sendUserOpToEntryPoint", userOp1);
+    // const gasEstimate = await this.entryPointContract.estimateGas.handleOps(
+    //   [userOp1],
+    //   "0x361Da2Ca3cC6C1f37d2914D5ACF02c4D2cCAC43b"
+    // );
+
+    const gasData = await this.userOpJsonRpcProvider.getFeeData();
+
+    const { gasPrice, maxFeePerGas, maxPriorityFeePerGas } = gasData;
+
+    // console.log(gasEstimate);
+    const GAS_SETTINGS = {
+      gasLimit: 1000000,
+      maxFeePerGas: ethers.utils.parseUnits("3", "gwei"),
+      maxPriorityFeePerGas: ethers.utils.parseUnits("1", "gwei"),
+    };
+
+    // const GAS_SETTINGS = {
+    //   gasLimit: 1000000,
+    //   maxFeePerGas: maxFeePerGas!,
+    //   maxPriorityFeePerGas: maxPriorityFeePerGas!,
+    // };
+
+    /**
+     * @dev Send a UserOperation to the entry point.
+     * @note KEEPS FAILING WITH THE ERROR
+     * @error AA32:
+     */
+    console.log("before handleOps");
+    const tx = await this.entryPointContract
+      .connect(this.originalSigner)
+      .handleOps(
+        [userOp1],
+        "0x361Da2Ca3cC6C1f37d2914D5ACF02c4D2cCAC43b",
+        GAS_SETTINGS
+      );
+    console.log("after handleOps");
 
     // Wait for the transaction to be mined and get its receipt
     const receipt = await tx.wait();
 
     // Return the transaction hash as a string
     return receipt.transactionHash;
+    // return "";
   }
 
   /**

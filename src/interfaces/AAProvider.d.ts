@@ -14,6 +14,7 @@ import { SimpleAccountAPI } from "../utils/SimpleAccountAPI";
 
 /**
  * Based on ethersproject's Base Provider and [ZeroDevApp's SDK](https://zerodev.app/)
+ * @note have not get up to date with the latest version of AAProvider
  */
 export declare class AAProvider extends BaseProvider {
   readonly chainId: number;
