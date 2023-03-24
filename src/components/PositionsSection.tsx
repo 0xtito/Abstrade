@@ -1,75 +1,169 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { ethers } from "ethers";
+import LimitOrderAccountABI from "../contracts/artifacts/LimitOrderAccount.json";
+import { erc20ABI, useAccount } from "wagmi";
 
 import { classNames, configureDate } from "../utils";
 
-const ordersInfo = [
-  {
-    date: configureDate(new Date()),
-    pair: "BTC/xDAI",
-    // type: "Limit",
-    price: 27500,
-    amount: 0.4,
-    total: 27500 * 0.4,
-    status: "Open",
-  },
-  {
-    date: configureDate(new Date()),
-    pair: "ETH/xDAI",
-    // type: "Limit",
-    price: 1700,
-    amount: 0.4,
-    total: 1700 * 0.4,
-    status: "Open",
-  },
-  {
-    date: configureDate(new Date()),
-    pair: "GNO/xDAI",
-    // type: "Limit",
-    price: 106.2,
-    amount: 1.5,
-    total: 106.2 * 1.5,
-    status: "Open",
-  },
-  {
-    date: configureDate(new Date()),
-    pair: "ETH/xDAI",
-    // type: "Limit",
-    price: 1750,
-    amount: 0.4,
-    total: 1750 * 0.4,
-    status: "Fulfilled",
-  },
-  {
-    date: configureDate(new Date()),
-    pair: "GNO/xDAI",
-    // type: "Limit",
-    price: 104.2,
-    amount: 3.5,
-    total: 104.2 * 3.5,
-    status: "Fulfilled",
-  },
-  {
-    date: configureDate(new Date()),
-    pair: "ETH/xDAI",
-    // type: "Limit",
-    price: 1720,
-    amount: 0.4,
-    total: 0,
-    status: "Canceled",
-  },
-];
+interface LimitOrder {
+  pair: string;
+  type: string;
+  price: string;
+  amount: string;
+  total: string;
+  filled: string;
+  expiry: string;
+  status: string;
+  id: number;
+}
+
+const tokens = {
+  "0x8e5bBbb09Ed1ebdE8674Cda39A0c169401db4252": "WBTC",
+  "0x6A023CCd1ff6F2045C3309768eAd9E68F978f6e1": "WETH",
+  "0x6810e776880c02933d47db1b9fc05908e5386b96": "GNO",
+  "0x0000000000000000000000000000000000000000": "xDAI",
+};
 
 const tabs = [
   { name: "All" },
   { name: "Open" },
   { name: "Fulfilled" },
-  { name: "Canceled" },
+  { name: "Cancelled" },
 ];
 
 export function PositionsSection() {
+  const [limitOrders, setLimitOrders] = useState<LimitOrder[]>([]);
   const [displayOrderType, setDisplayOrderType] = React.useState<{
     name: string;
   }>(tabs[0]);
+
+  // const {address} = // where to get this??  useAccount();
+
+  useEffect(() => {
+    getLimitOrders();
+  }, []);
+
+  const getLimitOrders = async () => {
+
+    const provider = new ethers.providers.JsonRpcProvider(
+      "https://rpc.ankr.com/gnosis"
+    ); // TODO: replace with signer
+    const limitOrderAccount = new ethers.Contract(
+      "0x29F418bCEa98925CC9f2FE16259B9cCB93486Bf6", // TODO: replace with user account address
+      LimitOrderAccountABI.abi,
+      provider
+    );
+
+    const _limitOrders: LimitOrder[] = [];
+    //set limit to 100 for now to prevent unbounded loop
+    for (let i = 1; i < 50; i++) {
+      let limitOrderData = await limitOrderAccount.limitOrders(i);
+      console.log(i, limitOrderData)
+
+      // test dummy data
+      // const limitOrderData = {
+      //   tokenIn:"0x8e5bBbb09Ed1ebdE8674Cda39A0c169401db4252", //"0x0000000000000000000000000000000000000000",
+      //   tokenOut:"0x0000000000000000000000000000000000000000", //"0x8e5bBbb09Ed1ebdE8674Cda39A0c169401db4252",
+      //   orderAmount: "4000000000000",
+      //   filledAmount: "8000000000000",
+      //   rate: "30000", // "30000000000000",
+      //   expiry: "100000000"
+      // }
+
+      // break loop once we get past end of orders
+      if (Number(limitOrderData.orderAmount) === 0) {
+        break;
+      }
+
+      let orderType: string;
+      let price: string;
+      let tokenOutDecimals: number;
+      let tokenInDecimals: number;
+      let tokenOutSymbol: string;
+      let tokenInSymbol: string;
+
+      if (limitOrderData.tokenOut === ethers.constants.AddressZero) {
+        orderType = "Buy";
+
+        tokenOutDecimals = 18;
+        tokenOutSymbol = "xDAI";
+
+        const tokenInContract = new ethers.Contract(
+          limitOrderData.tokenIn,
+          erc20ABI,
+          provider
+        );
+        tokenInSymbol = await tokenInContract.symbol();
+        tokenInDecimals = await tokenInContract.decimals();
+
+        price = (
+          1 / Number(ethers.utils.formatUnits(limitOrderData.rate, "gwei"))
+        ).toString(); //check this for decimals
+      } else if (limitOrderData.tokenIn === ethers.constants.AddressZero) {
+        orderType = "Sell";
+
+        tokenInDecimals = 18;
+        tokenInSymbol = "xDAI";
+
+        const tokenOutContract = new ethers.Contract(
+          limitOrderData.tokenOut,
+          erc20ABI,
+          provider
+        );
+        tokenOutSymbol = await tokenOutContract.symbol();
+        tokenOutDecimals = await tokenOutContract.decimals();
+
+        price = ethers.utils.formatUnits(limitOrderData.rate, "gwei");
+      } else {
+        console.log('unsupported pairing ignored');
+        break;
+      }
+
+      let orderStatus : string;
+
+      if(limitOrderData.amount <= limitOrderData.filled) {
+        orderStatus = "Fulfilled";
+      } else if(limitOrderData.expiry < Date.now()/1000) {
+        orderStatus = "Cancelled";
+      } else orderStatus = "Open";
+
+      const limitOrderFormatted: LimitOrder = {
+        pair:
+          orderType === "Buy"
+            ? `${tokenInSymbol}/${tokenOutSymbol}`
+            : `${tokenOutSymbol}/${tokenInSymbol}`,
+        type: orderType,
+        price: formatNumber(price, 4),
+        amount: formatNumber(ethers.utils.formatEther(limitOrderData.orderAmount), 4),
+        total: formatNumber((
+          Number(price) *
+          Number(ethers.utils.formatEther(limitOrderData.orderAmount))
+        ).toString(), 4),
+        filled: formatNumber(limitOrderData.filledAmount
+          .div(limitOrderData.orderAmount)
+          .mul(100).toString(), 3),
+        expiry: new Date(Number(limitOrderData.expiry) * 1000).toDateString(),
+        status: orderStatus,
+        id: i
+      };
+      _limitOrders.push(limitOrderFormatted);
+    }
+    
+    setLimitOrders(_limitOrders);
+  };
+
+  const cancelLimitOrder = async(e : any) => {
+    console.log("orderId to cancel =", e.target.id);
+  }
+
+  const formatNumber = (str : string, dig: number) => {
+    const num = Number(str);
+    if(num >= (10^(dig-1))){
+      return Math.round(num).toString();
+    } else {
+      return num.toPrecision(dig);
+    }
+  }
 
   return (
     <div className="px-4 py-8">
@@ -127,15 +221,15 @@ export function PositionsSection() {
                   <tr>
                     <th
                       scope="col"
-                      className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6"
+                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                     >
-                      Date
+                      Pair
                     </th>
                     <th
                       scope="col"
                       className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                     >
-                      Pair
+                      Type
                     </th>
                     <th
                       scope="col"
@@ -155,6 +249,12 @@ export function PositionsSection() {
                     >
                       Total
                     </th>
+                    <th
+                      scope="col"
+                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                    >
+                      Filled
+                    </th>
 
                     <th
                       scope="col"
@@ -168,38 +268,42 @@ export function PositionsSection() {
                   key={displayOrderType.name}
                   className="divide-y divide-gray-200 bg-white"
                 >
-                  {ordersInfo
-                    .filter((order) =>
-                      displayOrderType.name == "All"
-                        ? true
-                        : order.status == displayOrderType.name
-                    )
-                    .map((person) => (
-                      <tr key={person.price}>
+                  {limitOrders
+                    .filter((order) => {
+                      if(displayOrderType.name === "All" || order.status === displayOrderType.name) {
+                        return true;
+                      } 
+                      return false;
+                    })
+                    .map((order) => (
+                      <tr key={order.id} className= {order.status !== "Open"? 'bg-gray-300' : ''}>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          {person.date}
+                          {order.pair}
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          {person.pair}
+                          {order.type}
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          {person.price}
+                          {order.price}
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          {person.amount}
+                          {order.amount}
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          {person.total}
+                          {order.total}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                          {order.filled}%
                         </td>
                         <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                          {person.status == "Open" ? (
-                            <a
-                              href="#"
+                          {order.status == "Open" ? (
+                            <button
+                              id={order.id.toString()}
                               className="text-indigo-600 hover:text-indigo-900"
+                              onClick={(e : any) => cancelLimitOrder(e)}
                             >
                               Cancel
-                              <span className="sr-only">, {person.pair}</span>
-                            </a>
+                            </button>
                           ) : null}
                         </td>
                       </tr>
