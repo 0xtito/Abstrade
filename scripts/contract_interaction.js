@@ -71,8 +71,8 @@ expiry = block.timestamp + order_ttl;
 // Set order amount
 order_amount = BigInt(1000*1e18); // for example 1,000 xDAI
 // token_in desired price for the order
-token_in_price = 25000;
-// Calculate the rate based on desired token out price
+token_in_price = 25000; // for example BTC price
+// Calculate the rate based on desired token_in price
 rate = BigInt(Math.round(1e9/token_in_price));
 // We assume xDAI will always be the token_out
 token_out = "0x0000000000000000000000000000000000000000"; // native xDAI
