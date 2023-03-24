@@ -20,7 +20,8 @@
     "**/*.ts",
     "**/*.tsx",
     "src/components",
-    "**/*.js"
+    "**/*.js",
+    "test/test.mjs"
   ],
   "exclude": ["node_modules"]
 }

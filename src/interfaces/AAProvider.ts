@@ -1,8 +1,11 @@
 import {
   BaseProvider,
+  Provider,
+  JsonRpcProvider,
   TransactionReceipt,
   TransactionResponse,
 } from "@ethersproject/providers";
+
 import { Signer, BigNumber } from "ethers";
 import { Network } from "@ethersproject/networks";
 import { UserOperationStruct } from "@account-abstraction/contracts";
@@ -16,15 +19,17 @@ import { UserOperationEventListener } from "./UserOperationEventListener";
 import { SimpleAccountAPI } from "../utils/SimpleAccountAPI";
 import { AASigner } from "./AASigner";
 import { Web3AuthConfig } from ".";
+import { ethers } from "ethers";
+import { ClientConfig } from ".";
 
 /**
  * Based on ethersproject's Base Provider and [ZeroDevApp's SDK](https://zerodev.app/)
  */
 export class AAProvider extends BaseProvider {
   readonly chainId: number;
-  readonly config: Omit<Web3AuthConfig, "projectId">;
+  readonly config: ClientConfig;
   readonly originalSigner: Signer;
-  readonly originalProvider: BaseProvider;
+  readonly originalProvider: JsonRpcProvider;
   readonly httpRpcClient: CustomHttpRpcClient;
   // goinn to try only stored the entry point address, and not the whole type entry point?
   // readonly entryPoint: EntryPoint;
@@ -34,13 +39,23 @@ export class AAProvider extends BaseProvider {
   readonly signer: AASigner;
   constructor(
     chainId: number,
-    config: Omit<Web3AuthConfig, "projectId">,
+    config: ClientConfig,
     originalSigner: Signer,
-    originalProvider: BaseProvider,
+    originalProvider: JsonRpcProvider,
     customHttpRpcClient: CustomHttpRpcClient,
     entryPointAddress: string,
     smartAccountAPI: SimpleAccountAPI
   ) {
+    console.log(
+      "AAProvider constructor",
+      chainId,
+      config,
+      originalSigner,
+      originalProvider,
+      customHttpRpcClient,
+      entryPointAddress,
+      smartAccountAPI
+    );
     super({
       chainId: chainId,
       name: "ERC-4337 Custom Network",
@@ -58,11 +73,7 @@ export class AAProvider extends BaseProvider {
       originalSigner,
       this,
       customHttpRpcClient,
-      new SimpleAccountAPI({
-        provider: this,
-        entryPointAddress: entryPointAddress,
-        signer: originalSigner,
-      })
+      smartAccountAPI
     );
   }
   /**
@@ -194,27 +205,6 @@ export class AAProvider extends BaseProvider {
         return txReceipt;
       },
     };
-
-    // return new Promise((resolve, reject) => {
-    //   const resolveWithHooks = async (receipt: TransactionReceipt) => {
-    //     this.config.hooks?.transactionConfirmed?.call(
-    //       this.config,
-    //       userOp1.txHash
-    //     );
-    //     resolve(receipt);
-    //   };
-    //   const rejectWithHooks = (err: any) => {
-    //     this.config.hooks?.transactionReverted?.call(this.config, userOp1.txHash);
-    //     reject(err);
-    //   };
-    //   const interval = setInterval(async () => {
-    //     const receipt = await this.getTransactionReceipt(userOp1.txHash);
-    //     if (receipt) {
-    //       clearInterval(interval);
-    //       resolveWithHooks(receipt);
-    //     }
-    //   }, 1000);
-    // });
   }
 
   detectNetwork(): Promise<Network> {

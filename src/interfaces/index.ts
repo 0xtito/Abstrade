@@ -12,6 +12,8 @@ export interface Options {
   loginParams?: OpenloginLoginParams;
   modalConfig?: Record<WALLET_ADAPTER_TYPE, ModalConfig>;
 }
+import { Provider } from "@ethersproject/providers";
+
 import { BaseProvider } from "@ethersproject/providers";
 import { PaymasterAPI } from "@zerodevapp/sdk/dist/src/PaymasterAPI";
 import {
@@ -24,6 +26,10 @@ export interface Hooks {
   transactionReverted?: (txHash: string) => void;
   walletConnectSessionProposal?: (proposal: SessionProposal) => void;
 }
+import { ExternalProvider } from "@ethersproject/providers";
+import { GasOverheads } from "@account-abstraction/sdk";
+import { JsonRpcProvider } from "@ethersproject/providers";
+
 /**
  * configuration params for wrapProvider and ZeroDev's ClientConfig
  * @note there is no active bundler on Gnosis Chain, so we must either create a custom bundler or work without it
@@ -43,6 +49,37 @@ export interface Web3AuthConfig extends Options {
   /**
    * url to the bundler
    * @note there is no active bundler on Gnosis Chain, so we must either create a custom bundler or work without it
+   */
+  bundlerUrl?: string;
+  /**
+   * if set, use this pre-deployed wallet.
+   * (if not set, use getSigner().getAddress() to query the "counterfactual" address of wallet.
+   *  you may need to fund this address so the wallet can pay for its own creation)
+   */
+  walletAddress?: string;
+  /**
+   * if set, call just before signing.
+   */
+  paymasterAPI?: PaymasterAPI;
+  /**
+   * hooks are functions invoked during the lifecycle of transactions
+   */
+  hooks?: Hooks;
+}
+
+export interface ClientConfig {
+  /**
+   * Needed to track gas usage
+   */
+  projectId: string;
+  /**
+   * the entry point to use
+   */
+  entryPointAddress: string;
+  accountFactoryAddress: string;
+  /**
+   * url to the bundler
+   * there is no bunder on gnosis chain, so we will work around it
    */
   bundlerUrl?: string;
   /**
@@ -132,20 +169,18 @@ export interface DetailsForUserOp {
 }
 
 export interface BaseAccountAPIParams {
-  // provider: AAProvider;
-  provider: BaseProvider;
-  // overheads: { [key: string]: number };
+  provider: JsonRpcProvider;
   entryPointAddress: string;
   accountAddress?: string;
+  overheads?: Partial<GasOverheads>;
   paymasterAPI?: PaymasterAPI;
 }
 
 // Define the interface for the constructor parameters.
 export interface SimpleAccountAPIParams extends BaseAccountAPIParams {
-  entryPointAddress: string;
-  signer: Signer;
-
-  // owner: string;
+  factoryAddress?: string;
+  index?: number;
+  owner: Signer;
 }
 
 export interface PartialUserOp {
@@ -166,6 +201,12 @@ export interface PartialUserOp {
  * For the src/pages section
  */
 
+/**
+ * Interfaces/types
+ *
+ *
+ */
+
 export interface BarNavItem {
   name: string;
   href: string;
@@ -174,9 +215,54 @@ export interface BarNavItem {
 }
 
 export interface SidebarNavigationProps {
+  sidebarExpanded: boolean;
   sidebarNavigation: BarNavItem[];
+  setSidebarExpanded: React.Dispatch<React.SetStateAction<boolean>>;
+  mainNavigation: BarNavItem[];
+  userSettingsNav: BarNavItem[];
+  setSidebarNavigation: React.Dispatch<
+    React.SetStateAction<
+      {
+        name: string;
+        href: string;
+        icon: React.ForwardRefExoticComponent<
+          React.SVGProps<SVGSVGElement> & {
+            title?: string | undefined;
+            titleId?: string | undefined;
+          }
+        >;
+        current: boolean;
+      }[]
+    >
+  >;
 }
 
 export interface DashboardLayoutProps {
   children: JSX.Element;
+}
+
+export interface handleSideBarToggleArgs {
+  item: BarNavItem;
+  sidebarNavigation: BarNavItem[];
+  setSidebarNavigation: React.Dispatch<
+    React.SetStateAction<
+      {
+        name: string;
+        href: string;
+        icon: React.ForwardRefExoticComponent<
+          React.SVGProps<SVGSVGElement> & {
+            title?: string | undefined;
+            titleId?: string | undefined;
+          }
+        >;
+        current: boolean;
+      }[]
+    >
+  >;
+}
+
+export interface DividerProps {
+  Icon: React.ForwardRefExoticComponent<React.SVGProps<SVGSVGElement>>;
+  setSidebarExpanded: React.Dispatch<React.SetStateAction<boolean>>;
+  sidebarExpanded: boolean;
 }

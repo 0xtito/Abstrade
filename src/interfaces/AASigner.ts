@@ -12,17 +12,19 @@ import { Web3AuthConfig } from ".";
 import { AAProvider } from "./AAProvider";
 // dont need to include (now)
 // import { Hooks } from "./ClientConfig";
+import { defineReadOnly } from "ethers/lib/utils.js";
 
 import { CustomHttpRpcClient } from "./CustomHttpRpcClient";
 import ethers_eip712_1 from "ethers-eip712";
 import { SimpleAccountAPI } from "../utils/SimpleAccountAPI";
 import { UserOperationStruct } from ".";
+import { ClientConfig } from ".";
 
 /**
  * Based on ethers Signer and [ZeroDevApp's SDK](https://zerodev.app/)
  */
 export class AASigner extends Signer {
-  readonly config: Omit<Web3AuthConfig, "projectId">;
+  readonly config: ClientConfig;
   readonly originalSigner: Signer;
   readonly AAProvider: AAProvider;
   readonly httpRpcClient: CustomHttpRpcClient;
@@ -30,7 +32,7 @@ export class AASigner extends Signer {
   address?: string;
 
   constructor(
-    config: Omit<Web3AuthConfig, "projectId">,
+    config: ClientConfig,
     originalSigner: Signer,
     AAProvider: AAProvider,
     CustomHttpRpcClient: CustomHttpRpcClient,
@@ -42,7 +44,8 @@ export class AASigner extends Signer {
     this.AAProvider = AAProvider;
     this.httpRpcClient = CustomHttpRpcClient;
     this.smartAccountAPI = smartAccountAPI;
-    // this.provider = AAProvider;
+    // making AAProvider the provider property from Signer
+    defineReadOnly(this, "provider", AAProvider);
   }
   // delegate call is not a priority
   // delegateCopy(): AASigner {
@@ -65,8 +68,8 @@ export class AASigner extends Signer {
     } else {
       transaction.gasPrice = 0;
     }
+    console.log(transaction);
 
-    // `populateTransaction` internally calls `estimateGas`
     const tx = await this.populateTransaction(transaction);
 
     await this.verifyAllNecessaryFields(tx);
@@ -119,8 +122,9 @@ export class AASigner extends Signer {
   }
   unwrapError(errorIn: any): Error {
     if (!errorIn.body) {
-      const parsedError = JSON.parse(errorIn.body);
-      return parsedError;
+      // const parsedError = JSON.parse(errorIn.body);
+      // return parsedError;
+      return errorIn;
     }
     const error = errorIn as Error;
     if (error.message) {
@@ -167,6 +171,7 @@ export class AASigner extends Signer {
   async signTransaction(
     transaction: Deferrable<TransactionRequest>
   ): Promise<string> {
+    console.log("hi");
     return this.originalSigner.signTransaction(transaction);
   }
   async signUserOperation(userOperation: UserOperationStruct): Promise<string> {

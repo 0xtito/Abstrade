@@ -1,8 +1,7 @@
-require("@nomicfoundation/hardhat-toolbox");
-require("@nomiclabs/hardhat-etherscan");
-require("dotenv").config();
+import { HardhatUserConfig } from "hardhat/config";
+import "@nomicfoundation/hardhat-toolbox";
 
-module.exports = {
+const config: HardhatUserConfig = {
   solidity: {
     version: ">=0.6.0 <0.8.0",
     settings: {
@@ -16,7 +15,7 @@ module.exports = {
   networks: {
     hardhat: {
       forking: {
-        url: process.env.MUMBAI_URL,
+        url: process.env.MUMBAI_URL!,
         blockNumber: 16521526,
       },
     },
@@ -25,3 +24,5 @@ module.exports = {
     artifacts: "./src/artifacts",
   },
 };
+
+export default config;
