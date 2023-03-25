@@ -14,26 +14,67 @@ import {
 import { arrayify, hexConcat } from "ethers/lib/utils.js";
 
 import { SimpleAccountAPIParams, DetailsForUserOp } from "../interfaces";
-import { LimitOrderAccount } from "../interfaces/LimitOrderAccount";
 
-/**
- * @note Since the LimitOrderAccount is based off of the SimpleAccount, we can use the SimpleAccountAPI as a abstract class, which then the LimitOrderAccountAPI can extend
- * @note thanks eth-infinitism for the api
- */
-export abstract class SimpleAccountAPI extends BaseAccountAPI {
+export class SimpleAccountAPI extends BaseAccountAPI {
+  name: string;
   owner: Signer;
   index: number;
 
+  factoryAddress?: string;
+  factory?: SimpleAccountFactory;
+  accountContract?: SimpleAccount;
+
   constructor(params: SimpleAccountAPIParams) {
+    // removing overheads from params
     super(params);
-    const { owner, index } = params;
+    const { owner, factoryAddress } = params;
+    this.factoryAddress = factoryAddress;
     this.owner = owner;
-    this.index = index || 0;
+    // this.init();
+    this.index = params.index || 0;
+    this.name = "SimpleAccountAPI";
   }
 
-  abstract _getAccountContract(): Promise<LimitOrderAccount>;
+  // async init(): Promise<SimpleAccountAPI> {
+  //   if ((await this.provider.getCode(this.entryPointAddress)) === "0x") {
+  //     throw new Error(`entryPoint not deployed at ${this.entryPointAddress}`);
+  //   }
+  //   await this.getAccountAddress();
+  //   return this;
+  // }
 
-  abstract getAccountInitCode(): Promise<string>;
+  async _getAccountContract(): Promise<SimpleAccount> {
+    if (this.accountContract == null) {
+      this.accountContract = SimpleAccount__factory.connect(
+        await this.getAccountAddress(),
+        this.provider
+      );
+    }
+    return this.accountContract;
+  }
+
+  async getAccountInitCode(): Promise<string> {
+    if (this.factory == null) {
+      if (this.factoryAddress != null && this.factoryAddress !== "") {
+        this.factory = SimpleAccountFactory__factory.connect(
+          this.factoryAddress,
+          this.provider
+        );
+        // .connect(ethers.constants.AddressZero);
+      } else {
+        throw new Error("no factory to get initCode");
+      }
+    }
+    console.log("owner address", await this.owner.getAddress());
+    console.log("factory address", this.factory.address);
+    return hexConcat([
+      this.factory.address,
+      this.factory.interface.encodeFunctionData("createAccount", [
+        await this.owner.getAddress(),
+        this.index,
+      ]),
+    ]);
+  }
 
   async getNonce(): Promise<ethers.BigNumber> {
     if (await this.checkAccountPhantom()) {
@@ -91,21 +132,19 @@ export abstract class SimpleAccountAPI extends BaseAccountAPI {
     ]);
   }
 
-  /**
-   * @note to retrieve the contracts deposit information, if any
-   * @returns a object with: the deposit amount, a boolean value determining if the address has a stake, the staked amount, the withdraw time, and the unstake delay
-   */
   // Get the current deposit balance of the SimpleAccount in the EntryPoint.
   async getDeposit(): Promise<IStakeManager.DepositInfoStructOutput> {
+    // const simpleAccountContract = new ethers.Contract(
+    //   await this.owner.getAddress(),
+    //   SimpleAccountArtifact.abi,
+    //   this.provider
+    // );
     return await this.entryPointView.getDepositInfo(
       await this.getAccountAddress()
     );
+    // return await simpleAccountContract.getDeposit();
   }
 
-  /**
-   * @note this most likely wont work, could be worth configuring later, but for now, we will just use the execute method if need be
-   * @param value value to deposit into the entry point
-   */
   // Add a deposit to the SimpleAccount in the EntryPoint.
   async addDeposit(value: ethers.BigNumberish): Promise<void> {
     const simpleAccountContract = new ethers.Contract(
@@ -120,11 +159,6 @@ export abstract class SimpleAccountAPI extends BaseAccountAPI {
     await simpleAccountContract.addDeposit({ value });
   }
 
-  /**
-   * @note a simple function to sign the user operation hash, with the signer being the owner of the account
-   * @param userOpHash the hash of the user operation
-   * @returns the signature of the user operation
-   */
   async signUserOpHash(userOpHash: string): Promise<string> {
     // const signer = this.provider.originalSigner;
     console.log(this.owner);
@@ -132,11 +166,7 @@ export abstract class SimpleAccountAPI extends BaseAccountAPI {
     return signature;
   }
 
-  /**
-   * @note this most likely wont work, could be worth configuring later, but for now, we will just use the execute method if need be
-   * @param withdrawAddress address to withdraw the deposit to
-   * @param amount amount to withdraw
-   */
+  // Withdraw a specified amount from the SimpleAccount's deposit in the EntryPoint to a given address.
   async withdrawDepositTo(
     withdrawAddress: string,
     amount: ethers.BigNumberish

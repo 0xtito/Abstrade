@@ -1,4 +1,11 @@
-import { Fragment, useRef, useState, Dispatch, SetStateAction } from "react";
+import {
+  Fragment,
+  useRef,
+  useState,
+  Dispatch,
+  SetStateAction,
+  useContext,
+} from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { CheckIcon } from "@heroicons/react/24/outline";
 import { useAccount } from "wagmi";
@@ -6,6 +13,10 @@ import { AAProvider } from "../interfaces/AAProvider";
 import { ethers } from "ethers";
 import { AASigner } from "../interfaces/AASigner";
 import LimitOrderAccount from "../contracts/artifacts/LimitOrderAccount.json";
+import { MainPageContext } from "../contexts/MainPageContext";
+import { useWaitForTransaction } from "wagmi";
+
+import { assetContractAddresses } from "../utils/constants";
 
 interface ConfirmOrderProps {
   open: boolean;
@@ -17,14 +28,38 @@ interface ConfirmOrderProps {
     total: number;
   };
   setConfirmed: Dispatch<SetStateAction<boolean>>;
+  isSell: boolean;
 }
 
 export function ConfirmOrderModal(props: ConfirmOrderProps) {
   const { connector, address } = useAccount();
 
-  const { open, setOpen, orderInfo, setConfirmed } = props;
+  const { open, setOpen, orderInfo, setConfirmed, isSell } = props;
+  const [token, xDai] = orderInfo.pair.split("/");
 
+  const tokenAddress =
+    assetContractAddresses[token as keyof typeof assetContractAddresses];
+
+  const xDaiAddress = ethers.constants.AddressZero;
+
+  console.log(tokenAddress);
   const cancelButtonRef = useRef(null);
+
+  const handleValueShown = (key: string) => {
+    console.log(key);
+    switch (key) {
+      case "pair":
+        return "";
+      case "price":
+        return "xDAI";
+      case "amount":
+        return token;
+      case "total":
+        return "xDAI";
+      default:
+        return "";
+    }
+  };
 
   const handleSubmitOrder = async () => {
     if (!connector) {
@@ -34,51 +69,45 @@ export function ConfirmOrderModal(props: ConfirmOrderProps) {
 
     const provider: AAProvider = await connector.getProvider();
     const signer: AASigner = await connector?.getSigner();
-    // signing with the ogSigner, not the AASigner - there are some bugs in the AASigner that aren't a priority to fix right now
+    // // signing with the ogSigner, not the AASigner - there are some bugs in the AASigner that aren't a priority to fix right now
     const ogSigner = signer.originalSigner;
 
-    const privKey = process.env.NEXT_PUBLIC_TEST_WALLET_PRIV_KEY!;
-    const wallet = new ethers.Wallet(privKey, provider);
+    /**
+     * Depending on lee's test, we will just set the userOp's gasLimit to 0 (not using bundler)
+     * @note for now, we will just let it work as in
+     */
+    const encodedCreateLimitOrder =
+      await provider.smartAccountAPI.encodeCreateLimitOrder({
+        tokenOut: isSell ? tokenAddress : xDaiAddress,
+        tokenIn: isSell ? xDaiAddress : tokenAddress,
+        expiry: (await provider.getBlockNumber()) + 3600, // default value for now (1 hour)
+        orderAmount: BigInt(orderInfo.amount * 1e18),
+        rate: BigInt(Math.round(1e9 / orderInfo.price)), // ASK: why is this 1e9?
+      });
+    console.log(`encoded create limit order: ${encodedCreateLimitOrder}`);
 
-    // not using the limit order account *yet*
-    const ILimitOrderAccount = new ethers.utils.Interface(
-      LimitOrderAccount.abi
+    console.log(
+      `senderAccontAddress: ${await provider.getSenderAccountAddress()}`
     );
-
-    const LimitOrderContract = new ethers.Contract(
-      "0xFC91b8fb88d54a17Ba4BC2f526Fc1449f3dC9934",
-      LimitOrderAccount.abi,
-      wallet
-    );
-
-    // We will need to either send xDAI to the conterfactual address before the account is created so it can pay for gas
-    // or we call the addDeposit() function on the entry point passing in the counterfactual address so it can will already have
-    // enough gas to pay for the the account creation and first transaction
-
-    const encodedExecute = await provider.smartAccountAPI.encodeExecute({
-      target: address as string,
-      value: "100",
-      data: "0x",
-    });
 
     const signedUserOp = await provider.smartAccountAPI.createSignedUserOp({
-      target: "0x361Da2Ca3cC6C1f37d2914D5ACF02c4D2cCAC43b",
-      value: "100",
-      data: encodedExecute,
+      target: await provider.getSenderAccountAddress(),
+      data: encodedCreateLimitOrder,
     });
     console.log(`signed user op: ${signedUserOp}`);
 
+    // hard coding tx gas settings for now
     const GAS_SETTINGS = {
-      gasLimit: 1000000,
+      gasLimit: 1500000, // 1000000 failed when creating limit order + create account
       maxFeePerGas: ethers.utils.parseUnits("3", "gwei"),
       maxPriorityFeePerGas: ethers.utils.parseUnits("1", "gwei"),
     };
 
     const tx = await provider.smartAccountAPI.entryPointView
-      .connect(ogSigner)
+      .connect(ogSigner) // pretty sure we can connect our filler here instead of the signer
       .handleOps(
         [signedUserOp],
-        "0x361Da2Ca3cC6C1f37d2914D5ACF02c4D2cCAC43b",
+        "0x68Ca0dE1C234C510b4AB4297725fe88c5A7a5bc1",
         GAS_SETTINGS
       );
     console.log(`tx sent: ${tx.hash}`);
@@ -130,25 +159,27 @@ export function ConfirmOrderModal(props: ConfirmOrderProps) {
                       as="h3"
                       className="text-base font-semibold leading-6 text-gray-900"
                     >
-                      Order
+                      {`${isSell ? "Sell" : "Buy"} Order`}
                     </Dialog.Title>
                     <div className="mt-2">
                       <p className="text-sm text-gray-500">
-                        You are about to place a limit order. Confirm the order
-                        info below, and click confirm to place the order.
+                        By clicking confirm, your order will be placed on the
+                        Gnosis Chain.
                       </p>
                       <div className="bg-white shadow sm:rounded-lg mt-4 p-4">
                         {Object.entries(orderInfo).map(
                           ([key, value], index) => (
                             <div
                               key={index}
-                              className="flex justify-between items-center"
+                              className="flex justify-between items-center py-2"
                             >
                               <div className="text-sm font-semibold text-gray-700 capitalize">
                                 {key}
                               </div>
                               <div className="text-sm text-gray-500">
-                                {value}
+                                {`${value} ${
+                                  handleValueShown(key) as string | number
+                                }`}
                               </div>
                             </div>
                           )

@@ -13,7 +13,8 @@ import {
 
 import { ClientConfig } from "../interfaces";
 
-import { SimpleAccountAPI } from "./SimpleAccountAPI";
+import { SimpleAccountAPI } from "./OldSimpleAccountAPI";
+import { LimitOrderAccountAPI } from "./LimitOrderAccountAPI";
 import { CustomHttpRpcClient } from "../interfaces/CustomHttpRpcClient";
 import { AAProvider } from "../interfaces/AAProvider";
 
@@ -27,10 +28,12 @@ type AccountParams = {
   disconnect?: () => Promise<any>;
 };
 
+import { limitOrderAccountFactoryAddress } from "./constants";
+
 import {
   entryPointAddress,
-  simpleAccountFactoryAddress,
-  simpleAccountAddress,
+  // simpleAccountFactoryAddress,
+  // simpleAccountAddress,
   simpleAccountFactoryAddressGoerli,
 } from "./constants";
 
@@ -51,7 +54,14 @@ async function wrapProvider(
   const chainId = await owner.getChainId();
   const ownerAddress = await owner.getAddress();
 
-  const simpleAccountAPI = new SimpleAccountAPI({
+  // const simpleAccountAPI = new SimpleAccountAPI({
+  //   provider: simpleProvider,
+  //   entryPointAddress: aaConfig.entryPointAddress,
+  //   factoryAddress: aaConfig.accountFactoryAddress,
+  //   owner: owner,
+  // });
+
+  const limitOrderAccountAPI = new LimitOrderAccountAPI({
     provider: simpleProvider,
     entryPointAddress: aaConfig.entryPointAddress,
     factoryAddress: aaConfig.accountFactoryAddress,
@@ -64,6 +74,16 @@ async function wrapProvider(
     simpleProvider,
     owner
   );
+  // return await new AAProvider(
+  //   chainId,
+  //   aaConfig,
+  //   owner,
+  //   simpleProvider,
+  //   customHttpRpcClient,
+  //   entryPointAddress,
+  //   // simpleAccountAPI
+  //   _LimitOrderAccountAPI
+  // ).init();
 
   return await new AAProvider(
     chainId,
@@ -72,7 +92,7 @@ async function wrapProvider(
     simpleProvider,
     customHttpRpcClient,
     entryPointAddress,
-    simpleAccountAPI
+    limitOrderAccountAPI
   ).init();
 }
 
@@ -84,9 +104,8 @@ export async function getAAProvider(params: AccountParams, chainId: number) {
     projectId: params.projectId,
     chainId: chainId,
     entryPointAddress: entryPointAddress,
-    accountFactory: simpleAccountAddress, // should be
     // walletAddress: await params.owner.getAddress(),
-    accountFactoryAddress: simpleAccountFactoryAddress,
+    accountFactoryAddress: limitOrderAccountFactoryAddress,
     owner: params.owner,
   };
   const aaProvider = await wrapProvider(provider, aaConfig, params.owner);

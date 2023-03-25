@@ -17,9 +17,13 @@ import {
 
 import { mainNavigation, assets, userSettingsNav } from "../utils/constants";
 
+import { getLimitOrders } from "../utils/handleGetLimitOrders";
+
 import { DashboardLayoutProps } from "../interfaces";
 import { classNames } from "../utils";
 import { useAccount } from "wagmi";
+import { AAProvider } from "../interfaces/AAProvider";
+import { ethers } from "ethers";
 
 const fullBarNav = mainNavigation.concat(userSettingsNav);
 
@@ -30,17 +34,36 @@ export function DashboardLayout(props: DashboardLayoutProps) {
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [openModal, setOpenModal] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
-  const sidebar = createRef();
+  const [isSell, setIsSell] = useState(false);
   const [order, setOrder] = useState({
     pair: "",
     price: 0,
     amount: 0,
     total: 0,
   });
+  const sidebar = createRef();
 
+  // useEffect for initilizing the listeners for all active orders
   useEffect(() => {
-    console.log(connector);
+    if (!isConnected || !connector) return;
+    const init = async () => {
+      const provider: AAProvider = await connector.getProvider();
+
+      const wsProvider = new ethers.providers.WebSocketProvider(
+        process.env.NEXT_PUBLIC_GNOSIS_MAINNET_WS_URL!
+      );
+
+      const allLimitOrders = await getLimitOrders(
+        provider,
+        await provider.smartAccountAPI.getAccountAddress()
+      );
+
+      // const receipt = await wsProvider.waitForTransaction();
+    };
   }, [isConnected]);
+
+  // useEffect for adding a new order to the list of active orders
+  useEffect(() => {}, [confirmed]);
 
   const onSubmit = (
     pair: string,
@@ -61,6 +84,7 @@ export function DashboardLayout(props: DashboardLayoutProps) {
           setOpen={setOpenModal}
           open={openModal}
           setConfirmed={setConfirmed}
+          isSell={isSell}
         />
       )}
       <div>
@@ -136,66 +160,6 @@ export function DashboardLayout(props: DashboardLayoutProps) {
           userSettingsNav={userSettingsNav}
         />
 
-        {/* Make a sidebar that can expand, compress. Giving users more room to work with, helpful for our design as well*/}
-        {/* Probably not going to implement in production */}
-        {/* <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col"> */}
-        {/* {sidebarExpanded ? (
-          <WideSidebar
-            sidebarExpanded={sidebarExpanded}
-            setSidebarExpanded={setSidebarExpanded}
-            sidebarNavigation={sidebarNavigation}
-            setSidebarNavigation={setsidearNavigation}
-            mainNavigation={mainNavigation}
-            userSettingsNav={userSettingsNav}
-          />
-        ) : (
-          <NarrowSidebar
-            sidebarExpanded={sidebarExpanded}
-            setSidebarExpanded={setSidebarExpanded}
-            sidebarNavigation={sidebarNavigation}
-            setSidebarNavigation={setsidearNavigation}
-            mainNavigation={mainNavigation}
-            userSettingsNav={userSettingsNav}
-          />
-        )} */}
-        {/* <Transition.Root show={sidebarExpanded} as={Fragment}>
-          <Transition.Child
-            as={WideSidebar}
-            ref={createRef()} // Pass the ref prop directly
-            enter="transform transition duration-300"
-            enterFrom="-translate-x-full"
-            enterTo="translate-x-0"
-            leave="transform transition duration-300"
-            leaveFrom="translate-x-0"
-            leaveTo="-translate-x-full"
-            sidebarExpanded={sidebarExpanded}
-            setSidebarExpanded={setSidebarExpanded}
-            sidebarNavigation={sidebarNavigation}
-            setSidebarNavigation={setsidearNavigation}
-            mainNavigation={mainNavigation}
-            userSettingsNav={userSettingsNav}
-          />
-        </Transition.Root>
-
-        <Transition.Root show={!sidebarExpanded} as={Fragment}>
-          <Transition.Child
-            as={NarrowSidebar}
-            ref={createRef()} // Pass the ref prop directly
-            enter="transform transition duration-300"
-            enterFrom="translate-x-full"
-            enterTo="translate-x-0"
-            leave="transform transition duration-300"
-            leaveFrom="translate-x-0"
-            leaveTo="translate-x-full"
-            sidebarExpanded={sidebarExpanded}
-            setSidebarExpanded={setSidebarExpanded}
-            sidebarNavigation={sidebarNavigation}
-            setSidebarNavigation={setsidearNavigation}
-            mainNavigation={mainNavigation}
-            userSettingsNav={userSettingsNav}
-          />
-        </Transition.Root> */}
-
         {/* Search, Wallet, and main section */}
         <div
           className={classNames(
@@ -254,7 +218,11 @@ export function DashboardLayout(props: DashboardLayoutProps) {
               {props.children}
             </main>
             <aside className="relative hidden w-96 flex-shrink-0 overflow-y-auto lg:flex lg:flex-col px-4">
-              <OrderSection assets={assets} onSubmit={onSubmit} />
+              <OrderSection
+                onSubmit={onSubmit}
+                isSell={isSell}
+                setIsSell={setIsSell}
+              />
             </aside>
           </div>
         </div>

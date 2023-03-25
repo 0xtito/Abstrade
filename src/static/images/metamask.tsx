@@ -1,4 +1,4 @@
-import { IconProp } from "../../../interfaces";
+import { IconProp } from "../../interfaces";
 
 export function MetamaskIcon(props: IconProp) {
   const { className } = props;

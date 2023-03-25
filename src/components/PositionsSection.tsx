@@ -36,20 +36,20 @@ export function PositionsSection() {
   const [displayOrderType, setDisplayOrderType] = React.useState<{
     name: string;
   }>(tabs[0]);
+  const { address, isConnected } = useAccount();
 
   // const {address} = // where to get this??  useAccount();
 
   useEffect(() => {
-    getLimitOrders();
-  }, []);
+    if (isConnected) getLimitOrders();
+  }, [isConnected]);
 
   const getLimitOrders = async () => {
-
     const provider = new ethers.providers.JsonRpcProvider(
       "https://rpc.ankr.com/gnosis"
     ); // TODO: replace with signer
     const limitOrderAccount = new ethers.Contract(
-      "0x29F418bCEa98925CC9f2FE16259B9cCB93486Bf6", // TODO: replace with user account address
+      address as string, // TODO: replace with user account address
       LimitOrderAccountABI.abi,
       provider
     );
@@ -58,7 +58,6 @@ export function PositionsSection() {
     //set limit to 100 for now to prevent unbounded loop
     for (let i = 1; i < 50; i++) {
       let limitOrderData = await limitOrderAccount.limitOrders(i);
-      console.log(i, limitOrderData)
 
       // test dummy data
       // const limitOrderData = {
@@ -115,15 +114,15 @@ export function PositionsSection() {
 
         price = ethers.utils.formatUnits(limitOrderData.rate, "gwei");
       } else {
-        console.log('unsupported pairing ignored');
+        console.log("unsupported pairing ignored");
         break;
       }
 
-      let orderStatus : string;
+      let orderStatus: string;
 
-      if(limitOrderData.amount <= limitOrderData.filled) {
+      if (limitOrderData.amount <= limitOrderData.filled) {
         orderStatus = "Fulfilled";
-      } else if(limitOrderData.expiry < Date.now()/1000) {
+      } else if (limitOrderData.expiry < Date.now() / 1000) {
         orderStatus = "Cancelled";
       } else orderStatus = "Open";
 
@@ -134,36 +133,46 @@ export function PositionsSection() {
             : `${tokenOutSymbol}/${tokenInSymbol}`,
         type: orderType,
         price: formatNumber(price, 4),
-        amount: formatNumber(ethers.utils.formatEther(limitOrderData.orderAmount), 4),
-        total: formatNumber((
-          Number(price) *
-          Number(ethers.utils.formatEther(limitOrderData.orderAmount))
-        ).toString(), 4),
-        filled: formatNumber(limitOrderData.filledAmount
-          .div(limitOrderData.orderAmount)
-          .mul(100).toString(), 3),
+        amount: formatNumber(
+          ethers.utils.formatEther(limitOrderData.orderAmount),
+          4
+        ),
+        total: formatNumber(
+          (
+            Number(price) *
+            Number(ethers.utils.formatEther(limitOrderData.orderAmount))
+          ).toString(),
+          4
+        ),
+        filled: formatNumber(
+          limitOrderData.filledAmount
+            .div(limitOrderData.orderAmount)
+            .mul(100)
+            .toString(),
+          3
+        ),
         expiry: new Date(Number(limitOrderData.expiry) * 1000).toDateString(),
         status: orderStatus,
-        id: i
+        id: i,
       };
       _limitOrders.push(limitOrderFormatted);
     }
-    
+
     setLimitOrders(_limitOrders);
   };
 
-  const cancelLimitOrder = async(e : any) => {
+  const cancelLimitOrder = async (e: any) => {
     console.log("orderId to cancel =", e.target.id);
-  }
+  };
 
-  const formatNumber = (str : string, dig: number) => {
+  const formatNumber = (str: string, dig: number) => {
     const num = Number(str);
-    if(num >= (10^(dig-1))){
+    if (num >= (10 ^ (dig - 1))) {
       return Math.round(num).toString();
     } else {
       return num.toPrecision(dig);
     }
-  }
+  };
 
   return (
     <div className="px-4 py-8">
@@ -270,13 +279,19 @@ export function PositionsSection() {
                 >
                   {limitOrders
                     .filter((order) => {
-                      if(displayOrderType.name === "All" || order.status === displayOrderType.name) {
+                      if (
+                        displayOrderType.name === "All" ||
+                        order.status === displayOrderType.name
+                      ) {
                         return true;
-                      } 
+                      }
                       return false;
                     })
                     .map((order) => (
-                      <tr key={order.id} className= {order.status !== "Open"? 'bg-gray-300' : ''}>
+                      <tr
+                        key={order.id}
+                        className={order.status !== "Open" ? "bg-gray-300" : ""}
+                      >
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                           {order.pair}
                         </td>
@@ -300,7 +315,7 @@ export function PositionsSection() {
                             <button
                               id={order.id.toString()}
                               className="text-indigo-600 hover:text-indigo-900"
-                              onClick={(e : any) => cancelLimitOrder(e)}
+                              onClick={(e: any) => cancelLimitOrder(e)}
                             >
                               Cancel
                             </button>

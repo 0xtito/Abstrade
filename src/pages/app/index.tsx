@@ -3,17 +3,60 @@ import { useState, useEffect } from "react";
 import { DashboardLayout } from "../../layouts";
 import { TradingViewWidget, MainSection } from "../../components";
 
+import { mainNavigation, assets, userSettingsNav } from "../../utils/constants";
+import {
+  MainPageContext,
+  // sidebarNavigation,
+  // setsidearNavigation,
+  // openModal,
+  // setOpenModal,
+  // confirmed,
+  // setConfirmed,
+  // order,
+  // setOrder,
+  // selectedAsset,
+  // setSelectedAsset,
+} from "../../contexts/MainPageContext";
+
+const fullBarNav = mainNavigation.concat(userSettingsNav);
+
+// BTC - id: 943e8 / symbol: BINANCE:BTCDAI
+// ETH - id: e89cf / symbol: BINANCE:ETHDAI
+// GNO - id: 71cc4 / symbol: COINBASE:GNOUSD
+
 export default function App() {
-  // const {
-  // 	data,
-  // 	colors: {
-  // 		backgroundColor = 'white',
-  // 		lineColor = '#2962FF',
-  // 		textColor = 'black',
-  // 		areaTopColor = '#2962FF',
-  // 		areaBottomColor = 'rgba(41, 98, 255, 0.28)',
-  // 	} = {},
-  // }
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarNavigation, setSidebarNavigation] = useState(fullBarNav);
+  // const [sidebarExpanded, setSidebarExpanded] = useState(true);
+  const [openModal, setOpenModal] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
+  const [order, setOrder] = useState({
+    pair: "",
+    price: 0,
+    amount: 0,
+    total: 0,
+  });
+  const [selectedAsset, setSelectedAsset] = useState(assets[0]);
+
+  // this will then be used to use inside all the components, and should help with the chart component
+  // const MainPageContext = createContext({
+  //   sidebar: {
+  //     sidebarNavigation,
+  //     setsidearNavigation,
+  //   },
+  //   modal: {
+  //     openModal,
+  //     setOpenModal,
+  //   },
+  //   order: {
+  //     order,
+  //     setOrder,
+  //   },
+  //   asset: {
+  //     selectedAsset,
+  //     setSelectedAsset,
+  //   },
+  // });
 
   const initialData = [
     { time: "2018-12-22", value: 32.51 },
@@ -29,8 +72,33 @@ export default function App() {
   ];
 
   return (
-    <DashboardLayout>
-      <MainSection />
-    </DashboardLayout>
+    <MainPageContext.Provider
+      value={{
+        sidebar: {
+          sidebarNavigation,
+          setSidebarNavigation,
+        },
+        modal: {
+          openModal,
+          setOpenModal,
+        },
+        confirmed: {
+          confirmed,
+          setConfirmed,
+        },
+        order: {
+          order,
+          setOrder,
+        },
+        asset: {
+          selectedAsset,
+          setSelectedAsset,
+        },
+      }}
+    >
+      <DashboardLayout>
+        <MainSection />
+      </DashboardLayout>
+    </MainPageContext.Provider>
   );
 }

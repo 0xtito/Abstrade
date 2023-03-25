@@ -1,8 +1,16 @@
-import { Fragment, useState, Dispatch, SetStateAction } from "react";
+import {
+  Fragment,
+  useState,
+  Dispatch,
+  SetStateAction,
+  useContext,
+} from "react";
 import { Listbox, Transition } from "@headlessui/react";
 import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
 
 import { classNames } from "../utils";
+import { assets } from "../utils/constants";
+import { MainPageContext } from "../contexts/MainPageContext";
 
 interface AssetInputDropdownProps {
   assets: { id: number; name: string; symbol: string }[];
@@ -12,14 +20,19 @@ interface AssetInputDropdownProps {
   >;
 }
 
-export function AssetInputDropdown(props: AssetInputDropdownProps) {
-  const { assets, selectedAsset, setSelectedAsset } = props;
+export function AssetInputDropdown() {
+  // const { assets, selectedAsset, setSelectedAsset } = props;
+  const { asset } = useContext(MainPageContext);
+  const { selectedAsset, setSelectedAsset } = asset;
 
   return (
     <Listbox value={selectedAsset} onChange={setSelectedAsset}>
       {({ open }) => (
         <>
-          <Listbox.Label className="block text-sm font-medium leading-6 text-gray-900">
+          <Listbox.Label
+            className="block text-sm font-medium leading-6 text-gray-900"
+            onClick={(e) => e.preventDefault()}
+          >
             Asset
           </Listbox.Label>
           <div className="relative mt-2">
