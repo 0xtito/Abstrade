@@ -56,7 +56,6 @@ export function OrderSection({
       } else {
         tokenType = "ERC20";
       }
-      console.log(tokenType, assetAddress);
 
       const erc20Contract = new ethers.Contract(
         assetAddress,

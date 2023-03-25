@@ -17,13 +17,9 @@ import {
 const entryPointAddress: string = "0x0576a174D229E3cFA37253523E645A78A0C91B57";
 
 /**
- * Currently messing around with wagmi, SafeAuthKit/web3authkit, and rainbowkit
- * Just learning how they work together before integrating in AA
- * Here are some handy links:
+ * @title Wagmi config
+ * @note using customer connectors, that were influenced by ZeroDev's connectors
  * https://web3auth.io/docs/sdk/web/no-modal/
- * https://docs.gnosis-safe.io/learn/safe-core
- * https://wagmi.sh/examples/custom-connector#prerequisite-decide-what-type-of-connector-to-create
- *    - we may need to make a custom connector do create smart contract wallets from EOAs
  */
 
 const { chains, provider } = configureChains(

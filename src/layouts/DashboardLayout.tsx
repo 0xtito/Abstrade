@@ -17,9 +17,13 @@ import {
 
 import { mainNavigation, assets, userSettingsNav } from "../utils/constants";
 
+import { getLimitOrders } from "../utils/handleGetLimitOrders";
+
 import { DashboardLayoutProps } from "../interfaces";
 import { classNames } from "../utils";
 import { useAccount } from "wagmi";
+import { AAProvider } from "../interfaces/AAProvider";
+import { ethers } from "ethers";
 
 const fullBarNav = mainNavigation.concat(userSettingsNav);
 
@@ -39,9 +43,27 @@ export function DashboardLayout(props: DashboardLayoutProps) {
   });
   const sidebar = createRef();
 
+  // useEffect for initilizing the listeners for all active orders
   useEffect(() => {
-    console.log(connector);
+    if (!isConnected || !connector) return;
+    const init = async () => {
+      const provider: AAProvider = await connector.getProvider();
+
+      const wsProvider = new ethers.providers.WebSocketProvider(
+        process.env.NEXT_PUBLIC_GNOSIS_MAINNET_WS_URL!
+      );
+
+      const allLimitOrders = await getLimitOrders(
+        provider,
+        await provider.smartAccountAPI.getAccountAddress()
+      );
+
+      // const receipt = await wsProvider.waitForTransaction();
+    };
   }, [isConnected]);
+
+  // useEffect for adding a new order to the list of active orders
+  useEffect(() => {}, [confirmed]);
 
   const onSubmit = (
     pair: string,
