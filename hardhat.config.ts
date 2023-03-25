@@ -1,7 +1,7 @@
-import { HardhatUserConfig } from "hardhat/config";
+// import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 
-const config: HardhatUserConfig = {
+const config = {
   solidity: {
     version: ">=0.6.0 <0.8.0",
     settings: {
