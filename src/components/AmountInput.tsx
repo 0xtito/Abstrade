@@ -1,20 +1,24 @@
-import { MutableRefObject } from "react";
+import { Fragment, MutableRefObject, useContext } from "react";
+import { MainPageContext } from "../contexts/MainPageContext";
 
 interface AmountInputProps {
   amount: string;
   setAmount: React.Dispatch<React.SetStateAction<string>>;
-  asset: string;
 }
 
 export function AmountInput(props: AmountInputProps) {
-  const { amount, setAmount, asset } = props;
+  const { amount, setAmount } = props;
+  const { asset } = useContext(MainPageContext);
+  const { selectedAsset } = asset;
+
   const regex = /^\d*\.?\d*$/;
 
   return (
-    <div>
+    <Fragment>
       <label
         htmlFor="price"
         className="block text-sm font-medium leading-6 text-gray-900"
+        onClick={(e) => e.preventDefault()}
       >
         Amount
       </label>
@@ -34,10 +38,10 @@ export function AmountInput(props: AmountInputProps) {
         />
         <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
           <span className="text-gray-500 sm:text-sm" id="price-currency">
-            {asset}
+            {selectedAsset.name}
           </span>
         </div>
       </div>
-    </div>
+    </Fragment>
   );
 }

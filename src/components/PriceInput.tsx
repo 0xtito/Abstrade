@@ -1,3 +1,5 @@
+import React, { Fragment } from "react";
+
 interface PriceInputProps {
   price: string;
   setPrice: React.Dispatch<React.SetStateAction<string>>;
@@ -8,10 +10,11 @@ export function PriceInput(props: PriceInputProps) {
   const regex = /^\d*\.?\d*$/;
 
   return (
-    <div>
+    <Fragment>
       <label
         htmlFor="price"
         className="block text-sm font-medium leading-6 text-gray-900"
+        onClick={(e) => e.preventDefault()}
       >
         Price
       </label>
@@ -37,6 +40,6 @@ export function PriceInput(props: PriceInputProps) {
           </span>
         </div>
       </div>
-    </div>
+    </Fragment>
   );
 }

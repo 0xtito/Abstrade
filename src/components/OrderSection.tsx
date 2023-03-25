@@ -1,11 +1,11 @@
 // OrderSection.tsx
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useContext } from "react";
 
 import { AssetInputDropdown, PriceInput, AmountInput } from "./";
 import { classNames } from "../utils";
+import { MainPageContext } from "../contexts/MainPageContext";
 
 interface OrderSectionProps {
-  assets: { id: number; name: string; symbol: string }[];
   onSubmit: (
     pair: string,
     price: number,
@@ -14,8 +14,10 @@ interface OrderSectionProps {
   ) => void;
 }
 
-export function OrderSection({ assets, onSubmit }: OrderSectionProps) {
-  const [selectedAsset, setSelectedAsset] = useState(assets[0]);
+export function OrderSection({ onSubmit }: OrderSectionProps) {
+  const { asset } = useContext(MainPageContext);
+  const { selectedAsset, setSelectedAsset } = asset;
+  // const [selectedAsset, setSelectedAsset] = useState(assets[0]);
   // const price = useRef<number | null>(null);
   const [price, setPrice] = useState<string>("");
   const [amountToPurchase, setAmountToPurchase] = useState<string>("");
@@ -67,56 +69,25 @@ export function OrderSection({ assets, onSubmit }: OrderSectionProps) {
         </span>
       </div>
 
-      <AssetInputDropdown
-        assets={assets}
-        setSelectedAsset={setSelectedAsset}
-        selectedAsset={selectedAsset}
-      />
       <div className="mt-4">
-        {/* <label
-          htmlFor="price"
-          className="block text-sm font-medium text-gray-700"
-        >
-          Price
-        </label>
-        <input
-          type="number"
-          id="price"
-          value={price.current}
-          onChange={(e) => (price.current = e.target.valueAsNumber)}
-          className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-base text-gray-700"
-        /> */}
+        <AssetInputDropdown />
+      </div>
+      <div className="mt-4">
         <PriceInput price={price} setPrice={setPrice} />
       </div>
       <div className="mt-4">
-        {/* <label
-          htmlFor="amount"
-          className="block text-sm font-medium text-gray-700"
-        >
-          Amount
-        </label>
-        <input
-          type="number"
-          id="amount"
-          value={amount.current}
-          onChange={(e) => (amount.current = e.target.valueAsNumber)}
-          className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-base text-gray-700"
-        />
-      </div>*/}
-
         <AmountInput
           amount={amountToPurchase}
           setAmount={setAmountToPurchase}
-          asset={selectedAsset.name}
         />
-        <button
-          type="button"
-          onClick={handleSubmit}
-          className="mt-6 w-full px-4 py-2 font-semibold text-white bg-logo-blue rounded-lg shadow-md hover:bg-blue-500 focus:bg-blue-700 focus:ring-logo-blue focus:ring-opacity-75"
-        >
-          {isBuy ? "Submit Buy Order" : "Submit Sell Order"}
-        </button>
       </div>
+      <button
+        type="button"
+        onClick={handleSubmit}
+        className="mt-6 w-full px-4 py-2 font-semibold text-white bg-logo-blue rounded-lg shadow-md hover:bg-blue-500 focus:bg-blue-700 focus:ring-logo-blue focus:ring-opacity-75"
+      >
+        {isBuy ? "Submit Buy Order" : "Submit Sell Order"}
+      </button>
     </div>
   );
 }

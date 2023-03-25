@@ -1,4 +1,11 @@
-import { Fragment, useRef, useState, Dispatch, SetStateAction } from "react";
+import {
+  Fragment,
+  useRef,
+  useState,
+  Dispatch,
+  SetStateAction,
+  useContext,
+} from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { CheckIcon } from "@heroicons/react/24/outline";
 import { useAccount } from "wagmi";
@@ -6,6 +13,8 @@ import { AAProvider } from "../interfaces/AAProvider";
 import { ethers } from "ethers";
 import { AASigner } from "../interfaces/AASigner";
 import LimitOrderAccount from "../contracts/artifacts/LimitOrderAccount.json";
+import { MainPageContext } from "../contexts/MainPageContext";
+import { useWaitForTransaction } from "wagmi";
 
 interface ConfirmOrderProps {
   open: boolean;
@@ -55,21 +64,40 @@ export function ConfirmOrderModal(props: ConfirmOrderProps) {
     // or we call the addDeposit() function on the entry point passing in the counterfactual address so it can will already have
     // enough gas to pay for the the account creation and first transaction
 
-    const encodedExecute = await provider.smartAccountAPI.encodeExecute({
-      target: address as string,
-      value: "100",
-      data: "0x",
-    });
+    // const encodedExecute = await provider.smartAccountAPI.encodeExecute({
+    //   target: address as string,
+    //   value: "100",
+    //   data: "0x",
+    // });
+
+    // const signedUserOp = await provider.smartAccountAPI.createSignedUserOp({
+    //   target: "0x361Da2Ca3cC6C1f37d2914D5ACF02c4D2cCAC43b",
+    //   value: "100",
+    //   data: encodedExecute,
+    // });
+
+    const encodedCreateLimitOrder =
+      await provider.smartAccountAPI.encodeCreateLimitOrder({
+        tokenOut: ethers.constants.AddressZero,
+        tokenIn: "0x6A023CCd1ff6F2045C3309768eAd9E68F978f6e1",
+        expiry: (await provider.getBlockNumber()) + 1000,
+        orderAmount: BigInt(0.001 * 1e18),
+        rate: BigInt(Math.round(1e9 / 1700)),
+      });
+    console.log(`encoded create limit order: ${encodedCreateLimitOrder}`);
+
+    console.log(
+      `senderAccontAddress: ${await provider.getSenderAccountAddress()}`
+    );
 
     const signedUserOp = await provider.smartAccountAPI.createSignedUserOp({
-      target: "0x361Da2Ca3cC6C1f37d2914D5ACF02c4D2cCAC43b",
-      value: "100",
-      data: encodedExecute,
+      target: await provider.getSenderAccountAddress(),
+      data: encodedCreateLimitOrder,
     });
     console.log(`signed user op: ${signedUserOp}`);
 
     const GAS_SETTINGS = {
-      gasLimit: 1000000,
+      gasLimit: 1500000, // 1000000 failed when creating limit order + create account
       maxFeePerGas: ethers.utils.parseUnits("3", "gwei"),
       maxPriorityFeePerGas: ethers.utils.parseUnits("1", "gwei"),
     };
@@ -78,7 +106,7 @@ export function ConfirmOrderModal(props: ConfirmOrderProps) {
       .connect(ogSigner)
       .handleOps(
         [signedUserOp],
-        "0x361Da2Ca3cC6C1f37d2914D5ACF02c4D2cCAC43b",
+        "0x68Ca0dE1C234C510b4AB4297725fe88c5A7a5bc1",
         GAS_SETTINGS
       );
     console.log(`tx sent: ${tx.hash}`);
