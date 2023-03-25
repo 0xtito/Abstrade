@@ -19,6 +19,8 @@ contract LimitOrderAccountFactory {
         accountImplementation = new LimitOrderAccount(_entryPoint);
     }
 
+    event newAccount(address indexed newAccount);
+
     /**
      * create an account, and return its address.
      * returns the address even if the account is already deployed.
@@ -35,6 +37,8 @@ contract LimitOrderAccountFactory {
                 address(accountImplementation),
                 abi.encodeCall(LimitOrderAccount.initialize, (owner))
             )));
+        
+        emit newAccount(address(ret));
     }
 
     /**
