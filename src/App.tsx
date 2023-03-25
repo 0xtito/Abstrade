@@ -8,23 +8,33 @@ import { clearOrdersState } from "./components/OrderBook/orderbookSlice";
 import { useAppDispatch } from "./hooks";
 
 export const ProductIds = {
-  XBTUSD: 'PI_XBTUSD',
-  ETHUSD: 'PI_ETHUSD'
+  //XBTUSD: 'PI_XBTUSD',
+  //ETHUSD: 'PI_ETHUSD'
+  XDAIWETH: 'xDAI_WETH',
+  XDAIWBTC: 'xDAI_WBTC',
+  XDAIGNO: 'xDAI_GNO'
 };
 
 const options: any = {
-  PI_XBTUSD: [0.5, 1, 2.5],
-  PI_ETHUSD: [0.05, 0.1, 0.25]
+  //PI_XBTUSD: [0.5, 1, 2.5],
+  //PI_ETHUSD: [0.05, 0.1, 0.25]
+  xDAI_WETH: [0.5, 1, 2.5],
+  xDAI_WBTC: [0.05, 0.1, 0.25],
+  xDAI_GNO: [0.05, 0.1, 0.25]
 };
 
 export const ProductsMap: any = {
-  "PI_XBTUSD": "PI_ETHUSD",
-  "PI_ETHUSD": "PI_XBTUSD",
+  //"PI_XBTUSD": "PI_ETHUSD",
+  //"PI_ETHUSD": "PI_XBTUSD",
+  "xDAI_WETH": "xDAI_WBTC",
+  "xDAI_WBTC": "xDAI_WETH",
+  "xDAI_GNO": "xDAI_WETH",
 }
 
 function App() {
   const [windowWidth, setWindowWidth] = useState(0);
-  const [productId, setProductId] = useState(ProductIds.XBTUSD);
+  //const [productId, setProductId] = useState(ProductIds.XBTUSD);
+  const [productId, setProductId] = useState(ProductIds.XDAIWETH);
   const [isFeedKilled, setIsFeedKilled] = useState(false);
   const [isPageVisible, setIsPageVisible] = useState(true);
   const dispatch = useAppDispatch();
@@ -78,9 +88,11 @@ function App() {
     }
   }, []);
 
-  const toggleProductId = (): void => {
+  //const toggleProductId = (): void => {
+  const toggleProductId = (x: any) => {
     dispatch(clearOrdersState());
-    setProductId(ProductsMap[productId]);
+    //setProductId(ProductsMap[productId]);
+    setProductId(x)
   };
 
   const toggleFeed = (): void => {

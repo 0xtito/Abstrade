@@ -15,7 +15,8 @@ export interface OrderbookState {
 }
 
 const initialState: OrderbookState = {
-  market: 'PI_XBTUSD', // PI_ETHUSD
+  //market: 'PI_XBTUSD', // PI_ETHUSD
+  market: 'xDAI/WETH',
   rawBids: [],
   bids: [],
   maxTotalBids: 0,
@@ -39,7 +40,7 @@ const updatePriceLevel = (updatedLevel: number[], levels: number[][]): number[][
 const levelExists = (deltaLevelPrice: number, currentLevels: number[][]): boolean => currentLevels.some(level => level[0] === deltaLevelPrice);
 
 const addPriceLevel = (deltaLevel: number[], levels: number[][]): number[][] => {
-  return [ ...levels, deltaLevel ];
+  return [...levels, deltaLevel];
 };
 
 /**
@@ -87,7 +88,7 @@ const addTotalSums = (orders: number[][]): number[][] => {
     if (typeof order[2] !== 'undefined') {
       return order;
     } else {
-      const updatedLevel = [ ...order ];
+      const updatedLevel = [...order];
       const totalSum: number = idx === 0 ? size : size + totalSums[idx - 1];
       updatedLevel[2] = totalSum;
       totalSums.push(totalSum);
@@ -103,7 +104,7 @@ const addDepths = (orders: number[][], maxTotal: number): number[][] => {
     } else {
       const calculatedTotal: number = order[2];
       const depth = (calculatedTotal / maxTotal) * 100;
-      const updatedOrder = [ ...order ];
+      const updatedOrder = [...order];
       updatedOrder[3] = depth;
       return updatedOrder;
     }
