@@ -18,12 +18,14 @@ import { getAAProvider } from "../utils/getAAProvider";
 import { getAASigner } from "../utils/getAASigner";
 
 const entryPointAddress: string = "0x0576a174D229E3cFA37253523E645A78A0C91B57";
-const simpleAccountFactoryAddress =
-  "0x6C583EE7f3a80cB53dDc4789B0Af1aaFf90e55F3";
+// const simpleAccountFactoryAddress =
+//   "0x6C583EE7f3a80cB53dDc4789B0Af1aaFf90e55F3";
+import { limitOrderAccountFactoryAddress } from "../utils/constants";
+
 const aaConfig = {
   projectId: process.env.NEXT_PUBLIC_WEB3AUTH_CLIENT_ID as string,
   entryPointAddress: entryPointAddress,
-  accountFactoryAddress: simpleAccountFactoryAddress,
+  accountFactoryAddress: limitOrderAccountFactoryAddress,
 };
 import { Signer } from "ethers";
 
