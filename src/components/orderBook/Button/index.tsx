@@ -8,11 +8,11 @@ interface ButtonProps {
   callback: () => void;
 }
 
-const Button: FunctionComponent<ButtonProps> = ({ title, backgroundColor = '#5741d9', callback}) => {
+const Button: FunctionComponent<ButtonProps> = ({ title, backgroundColor = '#5741d9', callback }) => {
   return (
-    <Container backgroundColor={backgroundColor} onClick={callback}>
+    <div>
       {title}
-    </Container>
+    </div>
   );
 };
 

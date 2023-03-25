@@ -1,6 +1,5 @@
-import styled from "styled-components";
 
-export const Container = styled.div`
+export const Container = `
   display: flex;
   justify-content: space-around;
   color: #98a6af;

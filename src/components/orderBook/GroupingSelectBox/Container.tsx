@@ -1,6 +1,6 @@
-import styled from "styled-components";
 
-export const Container = styled.div`
+
+export const Container = `
   select {
     border-radius: 3px;
     padding: 0.3em;

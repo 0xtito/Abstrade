@@ -1,18 +1,18 @@
-import styled from "styled-components";
+
 
 interface ContainerProps {
   isRight: boolean;
   windowWidth: number;
 }
 
-export const Container = styled.div<ContainerProps>`
+export const Container = `
   display: flex;
   justify-content: space-around;
   background-color: #121723;
   position: relative;
   
   &:after {
-    background-color: ${props => props.isRight ? '#113534' : '#3d1e28'};
+
     background-position: center;
     height: 100%;
     padding: .3em 0;
@@ -23,10 +23,6 @@ export const Container = styled.div<ContainerProps>`
     right: unset;
     z-index: 0;
 
-    @media only screen and (min-width: 800px) {
-      left: ${props => props.isRight ? 'unset' : 0};
-      right: ${props => props.isRight ? 0 : 'unset'};
-    }
   }
   
   span {

@@ -12,12 +12,12 @@ interface FooterProps {
 
 const Footer: FunctionComponent<FooterProps> = ({ toggleFeedCallback, killFeedCallback, isFeedKilled }) => {
   return (
-    <Container>
+    <div>
       {!isFeedKilled && <Button title={'xDAI_WETH'} backgroundColor={'#5741d9'} callback={() => toggleFeedCallback('xDAI_WETH')} />}
       {!isFeedKilled && <Button title={'xDAI_WBTC'} backgroundColor={'#5741d9'} callback={() => toggleFeedCallback('xDAI_WBTC')} />}
       {!isFeedKilled && <Button title={'xDAI_GNO'} backgroundColor={'#5741d9'} callback={() => toggleFeedCallback('xDAI_GNO')} />}
       <Button title={isFeedKilled ? 'Renew feed' : 'Kill Feed'} backgroundColor={'#b91d1d'} callback={killFeedCallback} />
-    </Container>
+    </div>
   );
 };
 

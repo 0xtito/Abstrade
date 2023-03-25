@@ -7,12 +7,12 @@ interface HeaderProps {
   options: number[];
 }
 
-const Header: FunctionComponent<HeaderProps> = ({options}) => {
+const Header: FunctionComponent<HeaderProps> = ({ options }) => {
   return (
-    <Container>
+    <div>
       <h3>Order Book</h3>
       <GroupingSelectBox options={options} />
-    </Container>
+    </div>
   );
 };
 

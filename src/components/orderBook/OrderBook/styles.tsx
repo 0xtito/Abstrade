@@ -1,6 +1,6 @@
-import styled from "styled-components";
 
-export const Container = styled.div`
+
+export const Container = `
   display: flex;
   min-height: 31.25em;
   flex-direction: column-reverse;
@@ -14,7 +14,7 @@ export const Container = styled.div`
   }
 `
 
-export const TableContainer = styled.div`
+export const TableContainer = `
   display: flex;
   width: 100%;
   flex-direction: column;
