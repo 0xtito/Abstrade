@@ -71,7 +71,7 @@ export function ConfirmOrderModal(props: ConfirmOrderProps) {
     const signer: AASigner = await connector?.getSigner();
     // // signing with the ogSigner, not the AASigner - there are some bugs in the AASigner that aren't a priority to fix right now
     const ogSigner = signer.originalSigner;
-
+    console.log(provider.smartAccountAPI.isPhantom);
     /**
      * Depending on lee's test, we will just set the userOp's gasLimit to 0 (not using bundler)
      * @note for now, we will just let it work as in
@@ -80,7 +80,9 @@ export function ConfirmOrderModal(props: ConfirmOrderProps) {
       await provider.smartAccountAPI.encodeCreateLimitOrder({
         tokenOut: isSell ? tokenAddress : xDaiAddress,
         tokenIn: isSell ? xDaiAddress : tokenAddress,
-        expiry: (await provider.getBlockNumber()) + 3600, // default value for now (1 hour)
+        expiry:
+          (await provider.getBlock(await provider.getBlockNumber())).timestamp +
+          3600, // default value for now (1 hour)
         orderAmount: BigInt(orderInfo.amount * 1e18),
         rate: BigInt(Math.round(1e9 / orderInfo.price)), // ASK: why is this 1e9?
       });
