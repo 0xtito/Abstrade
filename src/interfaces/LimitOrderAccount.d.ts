@@ -131,7 +131,7 @@ export interface LimitOrderAccountInterface extends Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "cancelLimitOrder",
-    values: [PromiseOrValue<number>]
+    values: PromiseOrValue<number>
   ): string;
   encodeFunctionData(
     functionFragment: "fillLimitOrder",

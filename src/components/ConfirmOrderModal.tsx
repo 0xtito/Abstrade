@@ -102,15 +102,18 @@ export function ConfirmOrderModal(props: ConfirmOrderProps) {
     // hard coding tx gas settings for now
     const GAS_SETTINGS = {
       gasLimit: 1500000, // 1000000 failed when creating limit order + create account
-      maxFeePerGas: ethers.utils.parseUnits("3", "gwei"),
+      maxFeePerGas: ethers.utils.parseUnits("10", "gwei"),
       maxPriorityFeePerGas: ethers.utils.parseUnits("1", "gwei"),
     };
+
+    const ankrProvider = new ethers.providers.JsonRpcProvider('https://rpc.ankr.com/gnosis');
+    const relayerSigner = new ethers.Wallet(process.env.NEXT_PUBLIC_RELAYER_KEY!, ankrProvider); 
 
     const tx = await provider.smartAccountAPI.entryPointView
       .connect(ogSigner) // pretty sure we can connect our filler here instead of the signer
       .handleOps(
         [signedUserOp],
-        "0x68Ca0dE1C234C510b4AB4297725fe88c5A7a5bc1",
+        relayerSigner.address,
         GAS_SETTINGS
       );
     console.log(`tx sent: ${tx.hash}`);
