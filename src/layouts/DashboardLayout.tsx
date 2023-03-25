@@ -30,6 +30,7 @@ export function DashboardLayout(props: DashboardLayoutProps) {
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [openModal, setOpenModal] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+  const [isSell, setIsSell] = useState(false);
   const [order, setOrder] = useState({
     pair: "",
     price: 0,
@@ -61,6 +62,7 @@ export function DashboardLayout(props: DashboardLayoutProps) {
           setOpen={setOpenModal}
           open={openModal}
           setConfirmed={setConfirmed}
+          isSell={isSell}
         />
       )}
       <div>
@@ -194,7 +196,11 @@ export function DashboardLayout(props: DashboardLayoutProps) {
               {props.children}
             </main>
             <aside className="relative hidden w-96 flex-shrink-0 overflow-y-auto lg:flex lg:flex-col px-4">
-              <OrderSection onSubmit={onSubmit} />
+              <OrderSection
+                onSubmit={onSubmit}
+                isSell={isSell}
+                setIsSell={setIsSell}
+              />
             </aside>
           </div>
         </div>

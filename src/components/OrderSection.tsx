@@ -1,9 +1,16 @@
 // OrderSection.tsx
-import React, { useRef, useState, useContext } from "react";
+import React, { useRef, useState, useContext, useEffect } from "react";
 
 import { AssetInputDropdown, PriceInput, AmountInput } from "./";
 import { classNames } from "../utils";
 import { MainPageContext } from "../contexts/MainPageContext";
+import { BigNumber, ethers } from "ethers";
+import { useAccount } from "wagmi";
+import { AAProvider } from "../interfaces/AAProvider";
+
+import { erc20ABI } from "wagmi";
+import PermittableTokenABI from "../contracts/artifacts/PermittableTokenABI.json";
+import { assetContractAddresses } from "../utils/constants";
 
 interface OrderSectionProps {
   onSubmit: (
@@ -12,19 +19,66 @@ interface OrderSectionProps {
     amount: number,
     total: number
   ) => void;
+  isSell: boolean;
+  setIsSell: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-export function OrderSection({ onSubmit }: OrderSectionProps) {
+export function OrderSection({
+  onSubmit,
+  isSell,
+  setIsSell,
+}: OrderSectionProps) {
+  const { connector, isConnected } = useAccount();
   const { asset } = useContext(MainPageContext);
   const { selectedAsset, setSelectedAsset } = asset;
-  // const [selectedAsset, setSelectedAsset] = useState(assets[0]);
-  // const price = useRef<number | null>(null);
   const [price, setPrice] = useState<string>("");
   const [amountToPurchase, setAmountToPurchase] = useState<string>("");
-  const [isBuy, setIsBuy] = useState<boolean>(true);
+  const [xDAIBalance, setxDAIBalance] = useState<string>("");
+  const [tokenBalance, setTokenBalance] = useState<string>("");
 
-  // const [amountToPurchase, setAmountToPurchase] = useState<number>(0);
-  // const amount = useRef<number>(0);
+  useEffect(() => {
+    const handleBalance = async () => {
+      if (!connector) return;
+      const provider: AAProvider = await connector.getProvider();
+      const xDAIBalance = await provider.getBalance(
+        await provider.smartAccountAPI.getAccountAddress()
+      );
+      const xDAIBalanceInEth = ethers.utils.formatEther(xDAIBalance);
+
+      const assetAddress =
+        assetContractAddresses[
+          selectedAsset.name as keyof typeof assetContractAddresses
+        ];
+      let tokenType;
+      // meh way to do this
+      if (selectedAsset.name === "GNO") {
+        tokenType = "PermittableToken";
+      } else {
+        tokenType = "ERC20";
+      }
+      console.log(tokenType, assetAddress);
+
+      const erc20Contract = new ethers.Contract(
+        assetAddress,
+        tokenType === "ERC20" ? erc20ABI : PermittableTokenABI,
+        provider
+      );
+
+      const tokenBalance: BigNumber = await erc20Contract.balanceOf(
+        await provider.smartAccountAPI.getAccountAddress()
+      );
+
+      const tokenBalanceInEth = ethers.utils.formatEther(tokenBalance);
+      setTokenBalance(tokenBalanceInEth);
+      setxDAIBalance(xDAIBalanceInEth);
+    };
+    if (isConnected && connector) {
+      handleBalance();
+    } else {
+      setTokenBalance("");
+      setxDAIBalance("");
+    }
+  }, [isConnected, selectedAsset]);
 
   const handleSubmit = () => {
     const total = parseFloat(price) * parseFloat(amountToPurchase);
@@ -46,11 +100,11 @@ export function OrderSection({ onSubmit }: OrderSectionProps) {
           <button
             type="button"
             className={classNames(
-              isBuy
+              !isSell
                 ? "relative inline-flex items-center rounded-l-md bg-green-300 px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 focus:z-10"
                 : "relative inline-flex items-center rounded-l-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-10"
             )}
-            onClick={() => setIsBuy(true)}
+            onClick={() => setIsSell(false)}
           >
             Buy
           </button>
@@ -58,11 +112,11 @@ export function OrderSection({ onSubmit }: OrderSectionProps) {
           <button
             type="button"
             className={classNames(
-              !isBuy
+              isSell
                 ? "relative inline-flex -ml-px items-center rounded-r-md bg-red-300 px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 focus:z-10"
                 : "relative inline-flex -ml-px items-center rounded-r-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-10"
             )}
-            onClick={() => setIsBuy(false)}
+            onClick={() => setIsSell(true)}
           >
             Sell
           </button>
@@ -73,12 +127,17 @@ export function OrderSection({ onSubmit }: OrderSectionProps) {
         <AssetInputDropdown />
       </div>
       <div className="mt-4">
-        <PriceInput price={price} setPrice={setPrice} />
+        <PriceInput
+          price={price}
+          setPrice={setPrice}
+          xDAIBalance={xDAIBalance}
+        />
       </div>
       <div className="mt-4">
         <AmountInput
           amount={amountToPurchase}
           setAmount={setAmountToPurchase}
+          tokenBalance={tokenBalance}
         />
       </div>
       <button
@@ -86,7 +145,7 @@ export function OrderSection({ onSubmit }: OrderSectionProps) {
         onClick={handleSubmit}
         className="mt-6 w-full px-4 py-2 font-semibold text-white bg-logo-blue rounded-lg shadow-md hover:bg-blue-500 focus:bg-blue-700 focus:ring-logo-blue focus:ring-opacity-75"
       >
-        {isBuy ? "Submit Buy Order" : "Submit Sell Order"}
+        {isSell ? "Submit Sell Order" : "Submit Buy Order"}
       </button>
     </div>
   );
