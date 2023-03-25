@@ -1,9 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ethers } from "ethers";
+import { ethers, BytesLike } from "ethers";
 import LimitOrderAccountABI from "../contracts/artifacts/LimitOrderAccount.json";
+import EntryPointAccountABI from "../contracts/artifacts/EntryPoint.json";
 import { erc20ABI, useAccount } from "wagmi";
-
+import { AAProvider } from "../interfaces/AAProvider";
+import { AASigner } from "../interfaces/AASigner";
 import { classNames, configureDate } from "../utils";
+import { AssetPositionDropdown } from "./AssetPositionDropDown";
 
 interface LimitOrder {
   pair: string;
@@ -31,44 +34,51 @@ const tabs = [
   { name: "Cancelled" },
 ];
 
+const GAS_SETTINGS = {
+  gasLimit: 1500000, // 1000000 failed when creating limit order + create account
+  maxFeePerGas: ethers.utils.parseUnits("10", "gwei"),
+  maxPriorityFeePerGas: ethers.utils.parseUnits("1", "gwei"),
+};
+
 export function PositionsSection() {
   const [limitOrders, setLimitOrders] = useState<LimitOrder[]>([]);
   const [displayOrderType, setDisplayOrderType] = React.useState<{
     name: string;
   }>(tabs[0]);
+  const { connector, address, isConnected } = useAccount();
 
-  // const {address} = // where to get this??  useAccount();
+  const ankrProvider = new ethers.providers.JsonRpcProvider(
+    "https://rpc.ankr.com/gnosis"
+  );
+  const relayerSigner = new ethers.Wallet(
+    process.env.NEXT_PUBLIC_RELAYER_KEY!,
+    ankrProvider
+  );
 
   useEffect(() => {
-    getLimitOrders();
-  }, []);
+    if (isConnected) getLimitOrders();
+  }, [isConnected]);
 
   const getLimitOrders = async () => {
+    console.log("getting limit orders");
 
-    const provider = new ethers.providers.JsonRpcProvider(
-      "https://rpc.ankr.com/gnosis"
-    ); // TODO: replace with signer
+    const provider: AAProvider = await connector?.getProvider();
+    const signer: AASigner = await connector?.getSigner();
+
+    // if no SCW deployed return
+    if (await provider.smartAccountAPI.checkAccountPhantom()) return;
+
     const limitOrderAccount = new ethers.Contract(
-      "0x29F418bCEa98925CC9f2FE16259B9cCB93486Bf6", // TODO: replace with user account address
+      address as string,
       LimitOrderAccountABI.abi,
-      provider
+      signer
     );
 
     const _limitOrders: LimitOrder[] = [];
     //set limit to 100 for now to prevent unbounded loop
     for (let i = 1; i < 50; i++) {
-      let limitOrderData = await limitOrderAccount.limitOrders(i);
-      console.log(i, limitOrderData)
-
-      // test dummy data
-      // const limitOrderData = {
-      //   tokenIn:"0x8e5bBbb09Ed1ebdE8674Cda39A0c169401db4252", //"0x0000000000000000000000000000000000000000",
-      //   tokenOut:"0x0000000000000000000000000000000000000000", //"0x8e5bBbb09Ed1ebdE8674Cda39A0c169401db4252",
-      //   orderAmount: "4000000000000",
-      //   filledAmount: "8000000000000",
-      //   rate: "30000", // "30000000000000",
-      //   expiry: "100000000"
-      // }
+      const limitOrderData = await limitOrderAccount.limitOrders(i);
+      console.log(i, limitOrderData);
 
       // break loop once we get past end of orders
       if (Number(limitOrderData.orderAmount) === 0) {
@@ -115,15 +125,15 @@ export function PositionsSection() {
 
         price = ethers.utils.formatUnits(limitOrderData.rate, "gwei");
       } else {
-        console.log('unsupported pairing ignored');
+        console.log("unsupported pairing ignored");
         break;
       }
 
-      let orderStatus : string;
+      let orderStatus: string;
 
-      if(limitOrderData.amount <= limitOrderData.filled) {
+      if (limitOrderData.amount <= limitOrderData.filled) {
         orderStatus = "Fulfilled";
-      } else if(limitOrderData.expiry < Date.now()/1000) {
+      } else if (limitOrderData.expiry < Date.now() / 1000) {
         orderStatus = "Cancelled";
       } else orderStatus = "Open";
 
@@ -134,36 +144,131 @@ export function PositionsSection() {
             : `${tokenOutSymbol}/${tokenInSymbol}`,
         type: orderType,
         price: formatNumber(price, 4),
-        amount: formatNumber(ethers.utils.formatEther(limitOrderData.orderAmount), 4),
-        total: formatNumber((
-          Number(price) *
-          Number(ethers.utils.formatEther(limitOrderData.orderAmount))
-        ).toString(), 4),
-        filled: formatNumber(limitOrderData.filledAmount
-          .div(limitOrderData.orderAmount)
-          .mul(100).toString(), 3),
+        amount: formatNumber(
+          ethers.utils.formatEther(limitOrderData.orderAmount),
+          4
+        ),
+        total: formatNumber(
+          (
+            Number(price) *
+            Number(ethers.utils.formatEther(limitOrderData.orderAmount))
+          ).toString(),
+          4
+        ),
+        filled: formatNumber(
+          limitOrderData.filledAmount
+            .div(limitOrderData.orderAmount)
+            .mul(100)
+            .toString(),
+          3
+        ),
         expiry: new Date(Number(limitOrderData.expiry) * 1000).toDateString(),
         status: orderStatus,
-        id: i
+        id: i,
       };
       _limitOrders.push(limitOrderFormatted);
     }
-    
+
     setLimitOrders(_limitOrders);
   };
 
-  const cancelLimitOrder = async(e : any) => {
-    console.log("orderId to cancel =", e.target.id);
-  }
+  const cancelLimitOrder = async (e: any) => {
+    console.log("cancelling orderId...", e.target.id);
+    const provider: AAProvider = await connector?.getProvider();
+    const signer: AASigner = await connector?.getSigner();
 
-  const formatNumber = (str : string, dig: number) => {
+    const limitOrderAccount = new ethers.Contract(
+      address as string,
+      LimitOrderAccountABI.abi,
+      signer
+    );
+
+    const encodedCancelLimitOrder =
+      await provider.smartAccountAPI.encodeCancelLimitOrder(
+        Number(e.target.id)
+      );
+
+    console.log(`encoded cancel limit order: ${encodedCancelLimitOrder}`);
+
+    const signedUserOp = await provider.smartAccountAPI.createSignedUserOp({
+      target: await provider.getSenderAccountAddress(),
+      data: encodedCancelLimitOrder,
+    });
+    console.log(`signed user op: ${signedUserOp}`);
+
+    const tx = await provider.smartAccountAPI.entryPointView
+      .connect(relayerSigner)
+      .handleOps([signedUserOp], relayerSigner.address, GAS_SETTINGS);
+    console.log(`tx sent: ${tx.hash}`);
+    const receipt = await tx.wait();
+    console.log(`tx confirmed: ${receipt.transactionHash}`);
+  };
+
+  const cancelAllLimitOrders = async () => {
+    const idsToCancel: number[] = [];
+    const provider: AAProvider = await connector?.getProvider();
+
+    limitOrders.forEach((order) => {
+      if (order.status === "Open") {
+        idsToCancel.push(order.id);
+      }
+    });
+
+    const dest: BytesLike[] = [];
+    idsToCancel.forEach(async (id) => {
+      dest.push(await provider.smartAccountAPI.encodeCancelLimitOrder(id));
+    });
+    const func = new Array(dest.length).fill(address);
+
+    const limitOrderContract = new ethers.Contract(
+      address as string,
+      LimitOrderAccountABI.abi,
+      relayerSigner
+    );
+
+    const userOpCalldata = limitOrderContract.interface.encodeFunctionData(
+      "executeBatch",
+      [dest, func]
+    );
+
+    const entryPointContract = new ethers.Contract(
+      "0x0576a174D229E3cFA37253523E645A78A0C91B57",
+      EntryPointAccountABI,
+      relayerSigner
+    );
+
+    const userOp = {
+      sender: address as string,
+      nonce: await provider.smartAccountAPI.getNonce(),
+      initCode: "0x",
+      callData: userOpCalldata,
+      callGasLimit: 200000,
+      verificationGasLimit: 50000,
+      preVerificationGas: "0", //paid to bundler
+      maxFeePerGas: ethers.utils.parseUnits("0", "gwei"),
+      maxPriorityFeePerGas: ethers.utils.parseUnits("0", "gwei"),
+      paymasterAndData: "0x",
+      signature: "",
+    };
+
+    const signedUserOp = await provider.smartAccountAPI.signUserOp(userOp);
+
+    const tx = await provider.smartAccountAPI.entryPointView
+      .connect(relayerSigner)
+      .handleOps([signedUserOp], relayerSigner.address, GAS_SETTINGS);
+    console.log(`tx sent: ${tx.hash}`);
+    const receipt = await tx.wait();
+    console.log(`tx confirmed: ${receipt.transactionHash}`);
+  };
+
+  const formatNumber = (str: string, dig: number) => {
     const num = Number(str);
-    if(num >= (10^(dig-1))){
+    if (num >= (10 ^ (dig - 1))) {
       return Math.round(num).toString();
     } else {
       return num.toPrecision(dig);
     }
-  }
+  };
 
   return (
     <div className="px-4 py-8">
@@ -187,8 +292,8 @@ export function PositionsSection() {
             ))}
           </select>
         </div>
-        <div className="hidden sm:block">
-          <nav className="flex space-x-4" aria-label="Tabs">
+        <div className="flex flex-row justify-between">
+          <nav className="space-x-4 w-fit" aria-label="Tabs">
             {tabs.map((tab) => (
               <button
                 key={tab.name}
@@ -210,6 +315,9 @@ export function PositionsSection() {
               </button>
             ))}
           </nav>
+          <div className="w-fit">
+            <AssetPositionDropdown></AssetPositionDropdown>
+          </div>
         </div>
       </div>
       <div className="mt-2 flow-root">
@@ -258,8 +366,18 @@ export function PositionsSection() {
 
                     <th
                       scope="col"
-                      className="relative py-3.5 pl-3 pr-4 sm:pr-6"
+                      className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6"
                     >
+                      {displayOrderType.name === "Open" ||
+                      displayOrderType.name === "All" ? (
+                        <button
+                          id="cancelAll"
+                          className="text-indigo-600 hover:text-indigo-900"
+                          onClick={(e) => cancelAllLimitOrders()}
+                        >
+                          Cancel All
+                        </button>
+                      ) : null}
                       <span className="sr-only">Edit</span>
                     </th>
                   </tr>
@@ -270,13 +388,22 @@ export function PositionsSection() {
                 >
                   {limitOrders
                     .filter((order) => {
-                      if(displayOrderType.name === "All" || order.status === displayOrderType.name) {
+                      if (
+                        displayOrderType.name === "All" ||
+                        order.status === displayOrderType.name
+                      ) {
                         return true;
-                      } 
+                      }
                       return false;
                     })
+                    .sort((a, b) => {
+                      return Number(a.price) - Number(b.price);
+                    })
                     .map((order) => (
-                      <tr key={order.id} className= {order.status !== "Open"? 'bg-gray-300' : ''}>
+                      <tr
+                        key={order.id}
+                        className={order.status !== "Open" ? "bg-gray-300" : ""}
+                      >
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                           {order.pair}
                         </td>
@@ -300,7 +427,7 @@ export function PositionsSection() {
                             <button
                               id={order.id.toString()}
                               className="text-indigo-600 hover:text-indigo-900"
-                              onClick={(e : any) => cancelLimitOrder(e)}
+                              onClick={(e: any) => cancelLimitOrder(e)}
                             >
                               Cancel
                             </button>

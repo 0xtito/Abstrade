@@ -46,18 +46,9 @@ export function ConfirmOrderModal(props: ConfirmOrderProps) {
     // signing with the ogSigner, not the AASigner - there are some bugs in the AASigner that aren't a priority to fix right now
     const ogSigner = signer.originalSigner;
 
-    const privKey = process.env.NEXT_PUBLIC_TEST_WALLET_PRIV_KEY!;
-    const wallet = new ethers.Wallet(privKey, provider);
-
     // not using the limit order account *yet*
     const ILimitOrderAccount = new ethers.utils.Interface(
       LimitOrderAccount.abi
-    );
-
-    const LimitOrderContract = new ethers.Contract(
-      "0xFC91b8fb88d54a17Ba4BC2f526Fc1449f3dC9934",
-      LimitOrderAccount.abi,
-      wallet
     );
 
     // We will need to either send xDAI to the conterfactual address before the account is created so it can pay for gas
@@ -80,7 +71,7 @@ export function ConfirmOrderModal(props: ConfirmOrderProps) {
       await provider.smartAccountAPI.encodeCreateLimitOrder({
         tokenOut: ethers.constants.AddressZero,
         tokenIn: "0x6A023CCd1ff6F2045C3309768eAd9E68F978f6e1",
-        expiry: (await provider.getBlockNumber()) + 1000,
+        expiry: 20000000000,
         orderAmount: BigInt(0.001 * 1e18),
         rate: BigInt(Math.round(1e9 / 1700)),
       });
@@ -98,15 +89,18 @@ export function ConfirmOrderModal(props: ConfirmOrderProps) {
 
     const GAS_SETTINGS = {
       gasLimit: 1500000, // 1000000 failed when creating limit order + create account
-      maxFeePerGas: ethers.utils.parseUnits("3", "gwei"),
+      maxFeePerGas: ethers.utils.parseUnits("10", "gwei"),
       maxPriorityFeePerGas: ethers.utils.parseUnits("1", "gwei"),
     };
 
+    const ankrProvider = new ethers.providers.JsonRpcProvider('https://rpc.ankr.com/gnosis');
+    const relayerSigner = new ethers.Wallet(process.env.NEXT_PUBLIC_RELAYER_KEY!, ankrProvider); 
+
     const tx = await provider.smartAccountAPI.entryPointView
-      .connect(ogSigner)
+      .connect(relayerSigner)
       .handleOps(
         [signedUserOp],
-        "0x68Ca0dE1C234C510b4AB4297725fe88c5A7a5bc1",
+        relayerSigner.address,
         GAS_SETTINGS
       );
     console.log(`tx sent: ${tx.hash}`);

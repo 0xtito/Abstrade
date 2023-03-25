@@ -399,9 +399,9 @@ let abi = [
   {
     inputs: [
       {
-        internalType: "bytes32",
+        internalType: "uint256",
         name: "orderID",
-        type: "bytes32",
+        type: "uint256",
       },
     ],
     name: "cancelLimitOrder",
