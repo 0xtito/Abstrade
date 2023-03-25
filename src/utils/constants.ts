@@ -44,6 +44,16 @@ export const limitOrderAccountAddress =
 export const simpleAccountAddress =
   "0x5E0d7021bF4B79fdD44cDa03C0679a4Cc700872a";
 
+// {
+//   id: 2,
+//   name: "BTC",
+//   symbol: "https://cdn-icons-png.flaticon.com/512/5968/5968260.png",
+//   tvInfo: {
+//     id: "943e8",
+//     symbol: "BINANCE:BTCDAI",
+//   },
+// },
+
 export const assets = [
   {
     id: 1,
@@ -56,15 +66,6 @@ export const assets = [
     },
   },
   {
-    id: 2,
-    name: "BTC",
-    symbol: "https://cdn-icons-png.flaticon.com/512/5968/5968260.png",
-    tvInfo: {
-      id: "943e8",
-      symbol: "BINANCE:BTCDAI",
-    },
-  },
-  {
     id: 3,
     name: "GNO",
     symbol: "https://docs.gnosischain.com/img/tokens/gno.png",
@@ -74,6 +75,13 @@ export const assets = [
     },
   },
 ];
+
+export const assetContractAddresses = {
+  ETH: "0x6A023CCd1ff6F2045C3309768eAd9E68F978f6e1",
+  // GNO: "0x6810e776880c02933d47db1b9fc05908e5386b96",
+  GNO: "0x9C58BAcC331c9aa871AFD802DB6379a98e80CEdb",
+  xDAI: "0x0000000000000000000000000000000000000000",
+};
 
 export const mainNavigation = [
   { name: "Home", href: "#", icon: HomeIcon, current: false },
