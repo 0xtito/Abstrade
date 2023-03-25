@@ -16,6 +16,8 @@ import LimitOrderAccount from "../contracts/artifacts/LimitOrderAccount.json";
 import { MainPageContext } from "../contexts/MainPageContext";
 import { useWaitForTransaction } from "wagmi";
 
+import { assetContractAddresses } from "../utils/constants";
+
 interface ConfirmOrderProps {
   open: boolean;
   setOpen: Dispatch<SetStateAction<boolean>>;
@@ -26,14 +28,38 @@ interface ConfirmOrderProps {
     total: number;
   };
   setConfirmed: Dispatch<SetStateAction<boolean>>;
+  isSell: boolean;
 }
 
 export function ConfirmOrderModal(props: ConfirmOrderProps) {
   const { connector, address } = useAccount();
 
-  const { open, setOpen, orderInfo, setConfirmed } = props;
+  const { open, setOpen, orderInfo, setConfirmed, isSell } = props;
+  const [token, xDai] = orderInfo.pair.split("/");
 
+  const tokenAddress =
+    assetContractAddresses[token as keyof typeof assetContractAddresses];
+
+  const xDaiAddress = ethers.constants.AddressZero;
+
+  console.log(tokenAddress);
   const cancelButtonRef = useRef(null);
+
+  const handleValueShown = (key: string) => {
+    console.log(key);
+    switch (key) {
+      case "pair":
+        return "";
+      case "price":
+        return "xDAI";
+      case "amount":
+        return token;
+      case "total":
+        return "xDAI";
+      default:
+        return "";
+    }
+  };
 
   const handleSubmitOrder = async () => {
     if (!connector) {
@@ -43,37 +69,22 @@ export function ConfirmOrderModal(props: ConfirmOrderProps) {
 
     const provider: AAProvider = await connector.getProvider();
     const signer: AASigner = await connector?.getSigner();
-    // signing with the ogSigner, not the AASigner - there are some bugs in the AASigner that aren't a priority to fix right now
+    // // signing with the ogSigner, not the AASigner - there are some bugs in the AASigner that aren't a priority to fix right now
     const ogSigner = signer.originalSigner;
-
-    // not using the limit order account *yet*
-    const ILimitOrderAccount = new ethers.utils.Interface(
-      LimitOrderAccount.abi
-    );
-
-    // We will need to either send xDAI to the conterfactual address before the account is created so it can pay for gas
-    // or we call the addDeposit() function on the entry point passing in the counterfactual address so it can will already have
-    // enough gas to pay for the the account creation and first transaction
-
-    // const encodedExecute = await provider.smartAccountAPI.encodeExecute({
-    //   target: address as string,
-    //   value: "100",
-    //   data: "0x",
-    // });
-
-    // const signedUserOp = await provider.smartAccountAPI.createSignedUserOp({
-    //   target: "0x361Da2Ca3cC6C1f37d2914D5ACF02c4D2cCAC43b",
-    //   value: "100",
-    //   data: encodedExecute,
-    // });
-
+    console.log(provider.smartAccountAPI.isPhantom);
+    /**
+     * Depending on lee's test, we will just set the userOp's gasLimit to 0 (not using bundler)
+     * @note for now, we will just let it work as in
+     */
     const encodedCreateLimitOrder =
       await provider.smartAccountAPI.encodeCreateLimitOrder({
-        tokenOut: ethers.constants.AddressZero,
-        tokenIn: "0x6A023CCd1ff6F2045C3309768eAd9E68F978f6e1",
-        expiry: 20000000000,
-        orderAmount: BigInt(0.001 * 1e18),
-        rate: BigInt(Math.round(1e9 / 1700)),
+        tokenOut: isSell ? tokenAddress : xDaiAddress,
+        tokenIn: isSell ? xDaiAddress : tokenAddress,
+        expiry:
+          (await provider.getBlock(await provider.getBlockNumber())).timestamp +
+          3600, // default value for now (1 hour)
+        orderAmount: BigInt(orderInfo.amount * 1e18),
+        rate: BigInt(Math.round(1e9 / orderInfo.price)), // ASK: why is this 1e9?
       });
     console.log(`encoded create limit order: ${encodedCreateLimitOrder}`);
 
@@ -87,6 +98,7 @@ export function ConfirmOrderModal(props: ConfirmOrderProps) {
     });
     console.log(`signed user op: ${signedUserOp}`);
 
+    // hard coding tx gas settings for now
     const GAS_SETTINGS = {
       gasLimit: 1500000, // 1000000 failed when creating limit order + create account
       maxFeePerGas: ethers.utils.parseUnits("10", "gwei"),
@@ -97,7 +109,7 @@ export function ConfirmOrderModal(props: ConfirmOrderProps) {
     const relayerSigner = new ethers.Wallet(process.env.NEXT_PUBLIC_RELAYER_KEY!, ankrProvider); 
 
     const tx = await provider.smartAccountAPI.entryPointView
-      .connect(relayerSigner)
+      .connect(ogSigner) // pretty sure we can connect our filler here instead of the signer
       .handleOps(
         [signedUserOp],
         relayerSigner.address,
@@ -152,25 +164,27 @@ export function ConfirmOrderModal(props: ConfirmOrderProps) {
                       as="h3"
                       className="text-base font-semibold leading-6 text-gray-900"
                     >
-                      Order
+                      {`${isSell ? "Sell" : "Buy"} Order`}
                     </Dialog.Title>
                     <div className="mt-2">
                       <p className="text-sm text-gray-500">
-                        You are about to place a limit order. Confirm the order
-                        info below, and click confirm to place the order.
+                        By clicking confirm, your order will be placed on the
+                        Gnosis Chain.
                       </p>
                       <div className="bg-white shadow sm:rounded-lg mt-4 p-4">
                         {Object.entries(orderInfo).map(
                           ([key, value], index) => (
                             <div
                               key={index}
-                              className="flex justify-between items-center"
+                              className="flex justify-between items-center py-2"
                             >
                               <div className="text-sm font-semibold text-gray-700 capitalize">
                                 {key}
                               </div>
                               <div className="text-sm text-gray-500">
-                                {value}
+                                {`${value} ${
+                                  handleValueShown(key) as string | number
+                                }`}
                               </div>
                             </div>
                           )

@@ -1,7 +1,8 @@
 export function getOpenloginAdapterConfig() {
+  console.log("hi", process.env.NODE_ENV);
   return {
     clientId: process.env.NEXT_PUBLIC_WEB3AUTH_CLIENT_ID!,
-    network: "testnet",
+    network: process.env.NODE_ENV == "production" ? "mainnet" : "testnet",
     loginConfig: {
       google: {
         clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,

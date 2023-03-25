@@ -45,7 +45,9 @@ export function PositionsSection() {
   const [displayOrderType, setDisplayOrderType] = React.useState<{
     name: string;
   }>(tabs[0]);
+
   const { connector, address, isConnected } = useAccount();
+
 
   const ankrProvider = new ethers.providers.JsonRpcProvider(
     "https://rpc.ankr.com/gnosis"
@@ -60,6 +62,7 @@ export function PositionsSection() {
   }, [isConnected]);
 
   const getLimitOrders = async () => {
+
     console.log("getting limit orders");
 
     const provider: AAProvider = await connector?.getProvider();
@@ -70,6 +73,7 @@ export function PositionsSection() {
 
     const limitOrderAccount = new ethers.Contract(
       address as string,
+
       LimitOrderAccountABI.abi,
       signer
     );
@@ -77,8 +81,10 @@ export function PositionsSection() {
     const _limitOrders: LimitOrder[] = [];
     //set limit to 100 for now to prevent unbounded loop
     for (let i = 1; i < 50; i++) {
+
       const limitOrderData = await limitOrderAccount.limitOrders(i);
       console.log(i, limitOrderData);
+
 
       // break loop once we get past end of orders
       if (Number(limitOrderData.orderAmount) === 0) {
@@ -173,6 +179,7 @@ export function PositionsSection() {
   };
 
   const cancelLimitOrder = async (e: any) => {
+
     console.log("cancelling orderId...", e.target.id);
     const provider: AAProvider = await connector?.getProvider();
     const signer: AASigner = await connector?.getSigner();
