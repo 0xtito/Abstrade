@@ -13,6 +13,7 @@ import {
   WideSidebar,
   OrderSection,
   ConfirmOrderModal,
+  Notification,
 } from "../components";
 
 import { mainNavigation, assets, userSettingsNav } from "../utils/constants";
@@ -24,39 +25,40 @@ import { classNames } from "../utils";
 import { useAccount } from "wagmi";
 import { AAProvider } from "../interfaces/AAProvider";
 import { ethers } from "ethers";
+import { useOrderFulfilledListener } from "../hooks/useOrderFulfilledListener";
+import { useOrderCreatedListener } from "../hooks/useOrderCreatedListener";
 
 const fullBarNav = mainNavigation.concat(userSettingsNav);
 
 export function DashboardLayout(props: DashboardLayoutProps) {
   const { isConnected, connector } = useAccount();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarNavigation, setsidearNavigation] = useState(fullBarNav);
-  const [sidebarExpanded, setSidebarExpanded] = useState(true);
-  const [openModal, setOpenModal] = useState(false);
-  const [confirmed, setConfirmed] = useState(false);
-  const [isSell, setIsSell] = useState(false);
+  // const userAddress = _address
+  //   ? (_address as string) || ("" as string)
+  //   : undefined; // hacky away to get around the type being `0x${string}'
+  const [sidebarOpen, setSidebarOpen] = useState(false); // mobile config
+  const [sidebarNavigation, setSidebarNavigation] = useState(fullBarNav); // config navigation
+  const [openModal, setOpenModal] = useState(false); // config modal
+  const [confirmed, setConfirmed] = useState(false); // config if order is confirmed
+  const [isSell, setIsSell] = useState(false); // config if order is sell or buy
   const [order, setOrder] = useState({
     pair: "",
     price: 0,
     amount: 0,
     total: 0,
-  });
-  const sidebar = createRef();
+  }); // config order details
+  const [tx, setTx] = useState<string>("");
+  const [orderCreated, setOrderCreated] = useState<boolean>(false);
+  const [orderFulfilled, setOrderFulfilled] = useState<boolean>(false);
 
   // useEffect for initilizing the listeners for all active orders
   useEffect(() => {
     if (!isConnected || !connector) return;
     const init = async () => {
       const provider: AAProvider = await connector.getProvider();
+      const address = await provider.smartAccountAPI.getAccountAddress();
 
-      const wsProvider = new ethers.providers.WebSocketProvider(
-        process.env.NEXT_PUBLIC_GNOSIS_MAINNET_WS_URL!
-      );
-
-      const allLimitOrders = await getLimitOrders(
-        provider,
-        await provider.smartAccountAPI.getAccountAddress()
-      );
+      useOrderFulfilledListener(address, setOrderFulfilled, setTx);
+      useOrderCreatedListener(address, setOrderCreated, setTx);
 
       // const receipt = await wsProvider.waitForTransaction();
     };
@@ -85,6 +87,21 @@ export function DashboardLayout(props: DashboardLayoutProps) {
           open={openModal}
           setConfirmed={setConfirmed}
           isSell={isSell}
+          setTx={setTx}
+        />
+      )}
+      {/* Order FulfilledNotification */}
+      {(orderCreated || orderFulfilled) && orderCreated ? (
+        <Notification
+          orderCreated={orderCreated}
+          setOrderCreated={setOrderCreated}
+          tx={tx}
+        />
+      ) : (
+        <Notification
+          orderFulfilled={orderFulfilled}
+          setOrderFulfilled={setOrderFulfilled}
+          tx={tx}
         />
       )}
       <div>
@@ -152,22 +169,14 @@ export function DashboardLayout(props: DashboardLayoutProps) {
 
         {/* Static sidebar for desktop */}
         <WideSidebar
-          sidebarExpanded={sidebarExpanded}
-          setSidebarExpanded={setSidebarExpanded}
           sidebarNavigation={sidebarNavigation}
-          setSidebarNavigation={setsidearNavigation}
+          setSidebarNavigation={setSidebarNavigation}
           mainNavigation={mainNavigation}
           userSettingsNav={userSettingsNav}
         />
 
         {/* Search, Wallet, and main section */}
-        <div
-          className={classNames(
-            sidebarExpanded
-              ? "flex flex-1 flex-col lg:pl-64"
-              : "flex flex-1 flex-col lg:pl-28"
-          )}
-        >
+        <div className="flex flex-1 flex-col lg:pl-64">
           <div className="relative top-0 z-10 flex h-16 flex-shrink-0 bg-white shadow">
             <button
               type="button"
