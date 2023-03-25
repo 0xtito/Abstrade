@@ -29,6 +29,7 @@ interface ConfirmOrderProps {
   };
   setConfirmed: Dispatch<SetStateAction<boolean>>;
   isSell: boolean;
+  setTx: Dispatch<SetStateAction<string>>;
 }
 
 export function ConfirmOrderModal(props: ConfirmOrderProps) {
