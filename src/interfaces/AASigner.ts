@@ -16,9 +16,10 @@ import { defineReadOnly } from "ethers/lib/utils.js";
 
 import { CustomHttpRpcClient } from "./CustomHttpRpcClient";
 import ethers_eip712_1 from "ethers-eip712";
-import { SimpleAccountAPI } from "../utils/SimpleAccountAPI";
+import { SimpleAccountAPI } from "../utils/OldSimpleAccountAPI";
 import { UserOperationStruct } from ".";
 import { ClientConfig } from ".";
+import { LimitOrderAccountAPI } from "../utils/LimitOrderAccountAPI";
 
 /**
  * Based on ethers Signer and [ZeroDevApp's SDK](https://zerodev.app/)
@@ -28,7 +29,8 @@ export class AASigner extends Signer {
   readonly originalSigner: Signer;
   readonly AAProvider: AAProvider;
   readonly httpRpcClient: CustomHttpRpcClient;
-  readonly smartAccountAPI: SimpleAccountAPI;
+  // readonly smartAccountAPI: SimpleAccountAPI;
+  readonly smartAccountAPI: LimitOrderAccountAPI;
   address?: string;
 
   constructor(
@@ -36,7 +38,8 @@ export class AASigner extends Signer {
     originalSigner: Signer,
     AAProvider: AAProvider,
     CustomHttpRpcClient: CustomHttpRpcClient,
-    smartAccountAPI: SimpleAccountAPI
+    // smartAccountAPI: SimpleAccountAPI
+    smartAccountAPI: LimitOrderAccountAPI
   ) {
     super();
     this.config = config;
