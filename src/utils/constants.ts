@@ -29,6 +29,16 @@ export const simpleAccountFactoryAddressGoerli =
 export const simpleAccountFactoryAddress =
   "0x1053fe820b68d71b2a3ce4565b285b6bdabaaf74";
 
+export const limitOrderAccountFactoryAddress =
+  "0xf37255D9F2f1c1AfdF10FedE072d934733e7e983";
+
+// export const limitOrderAccountAddress =
+//   "0x2b7F1AdF3cB65dEEa4c49D097Ee9A70A86F46936";
+
+// testing to see which one to use
+export const limitOrderAccountAddress =
+  "0x29F418bCEa98925CC9f2FE16259B9cCB93486Bf6";
+
 // export const simpleAccountFactoryAddress =
 //   "0xCe4BCd8227059ee5797b81BaFaaB9353bBB13d98";
 export const simpleAccountAddress =
@@ -40,16 +50,28 @@ export const assets = [
     name: "ETH",
     symbol:
       "https://ethereum.org/static/6b935ac0e6194247347855dc3d328e83/13c43/eth-diamond-black.png",
+    tvInfo: {
+      id: "e89cf",
+      symbol: "BINANCE:ETHDAI",
+    },
   },
   {
     id: 2,
     name: "BTC",
     symbol: "https://cdn-icons-png.flaticon.com/512/5968/5968260.png",
+    tvInfo: {
+      id: "943e8",
+      symbol: "BINANCE:BTCDAI",
+    },
   },
   {
     id: 3,
     name: "GNO",
     symbol: "https://docs.gnosischain.com/img/tokens/gno.png",
+    tvInfo: {
+      id: "71cc4",
+      symbol: "COINBASE:GNOUSD",
+    },
   },
 ];
 

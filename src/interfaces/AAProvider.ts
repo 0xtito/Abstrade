@@ -16,11 +16,13 @@ import { getUserOpHash } from "@account-abstraction/utils";
 const log = debug("AAProvider");
 
 import { UserOperationEventListener } from "./UserOperationEventListener";
-import { SimpleAccountAPI } from "../utils/SimpleAccountAPI";
+import { SimpleAccountAPI } from "../utils/OldSimpleAccountAPI";
 import { AASigner } from "./AASigner";
 import { Web3AuthConfig } from ".";
 import { ethers } from "ethers";
 import { ClientConfig } from ".";
+import { LimitOrderAccount } from "./LimitOrderAccount";
+import { LimitOrderAccountAPI } from "../utils/LimitOrderAccountAPI";
 
 /**
  * Based on ethersproject's Base Provider and [ZeroDevApp's SDK](https://zerodev.app/)
@@ -34,7 +36,7 @@ export class AAProvider extends BaseProvider {
   // goinn to try only stored the entry point address, and not the whole type entry point?
   // readonly entryPoint: EntryPoint;
   readonly entryPointAddress: string;
-  readonly smartAccountAPI: SimpleAccountAPI;
+  readonly smartAccountAPI: LimitOrderAccountAPI;
   initializedBlockNumber: number;
   readonly signer: AASigner;
   constructor(
@@ -44,7 +46,8 @@ export class AAProvider extends BaseProvider {
     originalProvider: JsonRpcProvider,
     customHttpRpcClient: CustomHttpRpcClient,
     entryPointAddress: string,
-    smartAccountAPI: SimpleAccountAPI
+    // smartAccountAPI: SimpleAccountAPI
+    smartAccountAPI: LimitOrderAccountAPI
   ) {
     console.log(
       "AAProvider constructor",

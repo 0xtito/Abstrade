@@ -29,6 +29,12 @@ export interface Hooks {
 import { ExternalProvider } from "@ethersproject/providers";
 import { GasOverheads } from "@account-abstraction/sdk";
 import { JsonRpcProvider } from "@ethersproject/providers";
+import {
+  Dispatch,
+  SetStateAction,
+  SVGProps,
+  ForwardRefExoticComponent,
+} from "react";
 
 /**
  * configuration params for wrapProvider and ZeroDev's ClientConfig
@@ -265,4 +271,95 @@ export interface DividerProps {
   Icon: React.ForwardRefExoticComponent<React.SVGProps<SVGSVGElement>>;
   setSidebarExpanded: React.Dispatch<React.SetStateAction<boolean>>;
   sidebarExpanded: boolean;
+}
+
+export interface Asset {
+  id: number;
+  name: string;
+  symbol: string;
+  tvInfo: {
+    id: string;
+    symbol: string;
+  };
+}
+
+export interface MainPageContextInterface {
+  sidebar: {
+    sidebarNavigation: {
+      name: string;
+      href: string;
+      icon: ForwardRefExoticComponent<
+        SVGProps<SVGSVGElement> & {
+          title?: string | undefined;
+          titleId?: string | undefined;
+        }
+      >;
+      current: boolean;
+    }[];
+    setSidebarNavigation: React.Dispatch<
+      React.SetStateAction<
+        {
+          name: string;
+          href: string;
+          icon: ForwardRefExoticComponent<
+            SVGProps<SVGSVGElement> & {
+              title?: string | undefined;
+              titleId?: string | undefined;
+            }
+          >;
+          current: boolean;
+        }[]
+      >
+    >;
+  };
+  modal: {
+    openModal: boolean;
+    setOpenModal: React.Dispatch<React.SetStateAction<boolean>>;
+  };
+  confirmed: {
+    confirmed: boolean;
+    setConfirmed: Dispatch<SetStateAction<boolean>>;
+  };
+  order: {
+    order: {
+      pair: string;
+      price: number;
+      amount: number;
+      total: number;
+    };
+    setOrder: React.Dispatch<
+      React.SetStateAction<{
+        pair: string;
+        price: number;
+        amount: number;
+        total: number;
+      }>
+    >;
+  };
+  asset: {
+    selectedAsset: {
+      id: number;
+      name: string;
+      symbol: string;
+      tvInfo: {
+        id: string;
+        symbol: string;
+      };
+    };
+    setSelectedAsset: React.Dispatch<
+      React.SetStateAction<{
+        id: number;
+        name: string;
+        symbol: string;
+        tvInfo: {
+          id: string;
+          symbol: string;
+        };
+      }>
+    >;
+  };
+}
+
+export interface IconProp {
+  className?: string;
 }

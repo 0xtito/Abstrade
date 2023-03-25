@@ -17,7 +17,7 @@ import { JsonRpcProvider } from "@ethersproject/providers";
 // } from '@account-abstraction/sdk/dist/src/BaseAccountAPI';
 
 // import { SimpleAccountAPI } from "@account-abstraction/sdk";
-import { SimpleAccountAPI } from "./SimpleAccountAPI";
+import { SimpleAccountAPI } from "./OldSimpleAccountAPI";
 
 import {
   UserOperationStruct,
@@ -119,7 +119,7 @@ export abstract class BaseAccountAPI {
       this.isPhantom = false;
     } else {
       console.log(
-        `SimpleAccount Contract is NOT YET deployed at ${this.senderAddress} - working in "phantom account" mode.`
+        `LimitOrderAccount Contract is NOT YET deployed at ${this.senderAddress} - working in "phantom account" mode.`
       );
       this.isPhantom = true;
     }
