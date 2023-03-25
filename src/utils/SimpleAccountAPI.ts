@@ -4,6 +4,7 @@ import SimpleAccountArtifact from "../contracts/artifacts/SimpleAccount.json";
 import { PaymasterAPI } from "@zerodevapp/sdk/dist/src/PaymasterAPI";
 import { ContractTransaction } from "ethers";
 import { IStakeManager } from "@account-abstraction/contracts";
+import { BytesLike } from "ethers/lib/utils.js";
 
 import {
   SimpleAccountFactory,
@@ -87,6 +88,18 @@ export abstract class SimpleAccountAPI extends BaseAccountAPI {
     return accountContract.interface.encodeFunctionData("execute", [
       target,
       value!,
+      data,
+    ]);
+  }
+
+  async encodeExecuteBatch(
+    addresses: string[],
+    data: BytesLike[]
+  ): Promise<string> {
+    // const { target, value, data } = details;
+    const accountContract = await this._getAccountContract();
+    return accountContract.interface.encodeFunctionData("executeBatch", [
+      addresses,
       data,
     ]);
   }
