@@ -21,8 +21,7 @@ interface LimitOrder {
 }
 
 const tokens = {
-  "0x8e5bBbb09Ed1ebdE8674Cda39A0c169401db4252": "WBTC",
-  "0x6A023CCd1ff6F2045C3309768eAd9E68F978f6e1": "WETH",
+  "0x6A023CCd1ff6F2045C3309768eAd9E68F978f6e1": "ETH",
   "0x6810e776880c02933d47db1b9fc05908e5386b96": "GNO",
   "0x0000000000000000000000000000000000000000": "xDAI",
 };
@@ -82,8 +81,18 @@ export function PositionsSection() {
 
     const _limitOrders: LimitOrder[] = [];
     //set limit to 100 for now to prevent unbounded loop
-    for (let i = 1; i < 50; i++) {
+    for (let i = 1; i < 100; i++) {
       const limitOrderData = await limitOrderAccount.limitOrders(i);
+/*  dummy test data
+      const limitOrderData = {
+        orderAmount: ethers.BigNumber.from("1000"),
+        filledAmount: ethers.BigNumber.from("500"),
+        expiry: 20000000000000000,
+        tokenOut: "0x6A023CCd1ff6F2045C3309768eAd9E68F978f6e1",        
+        tokenIn:"0x0000000000000000000000000000000000000000",
+        rate: ethers.BigNumber.from("500"),
+      } */
+
       console.log(i, limitOrderData);
 
       // break loop once we get past end of orders
@@ -148,11 +157,6 @@ export function PositionsSection() {
         orderStatus = "Cancelled";
       } else orderStatus = "Open";
 
-      console.log("limit order info");
-      limitOrderData.forEach((element: any) => {
-        console.log(ethers.utils.formatEther(element) || element);
-      });
-
       function roundToNearestDecimalPlace(num: number): number {
         const numberOfDecimals = Math.ceil(-Math.log10(Math.abs(num)));
         return parseFloat(num.toFixed(numberOfDecimals));
@@ -164,30 +168,19 @@ export function PositionsSection() {
           10 ** 8
       ).toString();
 
-      // const filledAmount = formatNumber(
-      //   roundToNearestDecimalPlace(
-      //     Number(limitOrderData.filledAmount) / Number(amount)
-      //   ).toString(),
-      //   3
-      // );
-
       const limitOrderFormatted: LimitOrder = {
         pair:
           orderType === "Buy"
             ? `${tokenInSymbol}/${tokenOutSymbol}`
             : `${tokenOutSymbol}/${tokenInSymbol}`,
         type: orderType,
-        price: formatNumber(price, 4),
+        price: formatPrice(price, 4),
         // price: price.toFixed(4),
         amount: amount,
-        total: (Number(price) * Number(amount)).toString(),
-        filled: formatNumber(
-          limitOrderData.filledAmount
-            .div(limitOrderData.orderAmount)
-            .mul(100)
-            .toString(),
-          3
-        ),
+        total: formatNumber((Number(price) * Number(amount)).toString(), 4),
+        filled:
+          formatNumber(((Number(ethers.utils.formatEther(limitOrderData.filledAmount))/
+          Number(ethers.utils.formatEther(limitOrderData.orderAmount)))*100).toString(), 3),
         expiry: new Date(Number(limitOrderData.expiry) * 1000).toDateString(),
         status: orderStatus,
         id: i,
@@ -302,6 +295,15 @@ export function PositionsSection() {
   };
 
   const formatNumber = (str: string, dig: number) => {
+    const num = Number(str);
+    if (num >= (10 ^ (dig - 1))) {
+      return (Math.round(num*1000)/1000).toString();
+    } else {
+      return num.toPrecision(dig);
+    }
+  };
+
+  const formatPrice = (str: string, dig: number) => {
     const num = Number(str);
     if (num >= (10 ^ (dig - 1))) {
       return Math.round(num).toString();
@@ -453,7 +455,7 @@ export function PositionsSection() {
                         className={order.status !== "Open" ? "bg-gray-300" : ""}
                       >
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          {order.pair} - {order.id}
+                          {order.pair}
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                           {order.type}
