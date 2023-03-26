@@ -69,6 +69,7 @@ export function ConfirmOrderModal(props: ConfirmOrderProps) {
     }
 
     const provider: AAProvider = await connector.getProvider();
+    const ogProvider = provider.originalProvider;
     const signer: AASigner = await connector?.getSigner();
     // // signing with the ogSigner, not the AASigner - there are some bugs in the AASigner that aren't a priority to fix right now
     const ogSigner = signer.originalSigner;
@@ -83,7 +84,7 @@ export function ConfirmOrderModal(props: ConfirmOrderProps) {
         tokenIn: isSell ? xDaiAddress : tokenAddress,
         expiry:
           (await provider.getBlock(await provider.getBlockNumber())).timestamp +
-          3600, // default value for now (1 hour)
+          50_000, // default value for now (1 hour)
         orderAmount: BigInt(orderInfo.amount * 1e18),
         rate: BigInt(Math.round(1e9 / orderInfo.price)), // ASK: why is this 1e9?
       });
@@ -93,29 +94,47 @@ export function ConfirmOrderModal(props: ConfirmOrderProps) {
       `senderAccontAddress: ${await provider.getSenderAccountAddress()}`
     );
 
+    const isPhantom = provider.smartAccountAPI.isPhantom;
+
+    //
     const signedUserOp = await provider.smartAccountAPI.createSignedUserOp({
       target: await provider.getSenderAccountAddress(),
       data: encodedCreateLimitOrder,
+      gasLimit: isPhantom ? 100_000 : undefined,
     });
     console.log(`signed user op: ${signedUserOp}`);
 
-    // hard coding tx gas settings for now
-    const GAS_SETTINGS = {
-      gasLimit: 1500000, // 1000000 failed when creating limit order + create account
-      maxFeePerGas: ethers.utils.parseUnits("10", "gwei"),
-      maxPriorityFeePerGas: ethers.utils.parseUnits("1", "gwei"),
+    const { maxFeePerGas, maxPriorityFeePerGas } =
+      await ogProvider.getFeeData();
+
+    let GAS_SETTINGS = {
+      gasLimit: 1_000_000,
+      maxFeePerGas: maxFeePerGas
+        ? maxFeePerGas
+        : ethers.utils.parseUnits("15", "gwei"),
+      maxPriorityFeePerGas: maxPriorityFeePerGas
+        ? maxPriorityFeePerGas
+        : ethers.utils.parseUnits("1", "gwei"),
     };
 
-    const ankrProvider = new ethers.providers.JsonRpcProvider('https://rpc.ankr.com/gnosis');
-    const relayerSigner = new ethers.Wallet(process.env.NEXT_PUBLIC_RELAYER_KEY!, ankrProvider); 
+    if (isPhantom) {
+      GAS_SETTINGS = {
+        gasLimit: GAS_SETTINGS.gasLimit * 3, // 1000000 failed when creating limit order + create account
+        maxFeePerGas: GAS_SETTINGS.maxFeePerGas.mul(3),
+        maxPriorityFeePerGas: GAS_SETTINGS.maxPriorityFeePerGas,
+      };
+    }
+    // hard coding tx gas settings for now
+
+    // const ankrProvider = new ethers.providers.JsonRpcProvider('https://rpc.ankr.com/gnosis');
+    const relayerSigner = new ethers.Wallet(
+      process.env.NEXT_PUBLIC_RELAYER_KEY!,
+      ogProvider
+    );
 
     const tx = await provider.smartAccountAPI.entryPointView
-      .connect(ogSigner) // pretty sure we can connect our filler here instead of the signer
-      .handleOps(
-        [signedUserOp],
-        relayerSigner.address,
-        GAS_SETTINGS
-      );
+      .connect(relayerSigner) // pretty sure we can connect our filler here instead of the signer
+      .handleOps([signedUserOp], relayerSigner.address, GAS_SETTINGS);
     console.log(`tx sent: ${tx.hash}`);
     const receipt = await tx.wait();
     console.log(`tx confirmed: ${receipt.transactionHash}`);

@@ -190,34 +190,19 @@ export abstract class BaseAccountAPI {
     let callData: string;
     const value = detailsForUserOp.value ?? BigNumber.from(0);
 
-    // Not doing delegate mode, if we were we sending ops for the user we would need to use this(will implement depending on time)
-    // if (this.delegateMode) {
-    //   callData = await this.encodeExecuteDelegate(
-    //     detailsForUserOp.target,
-    //     value,
-    //     detailsForUserOp.data
-    //   );
-    // } else {
-    //   callData = await this.encodeExecute({
-    //     target: detailsForUserOp.target,
-    //     value,
-    //     data: detailsForUserOp.data,
-    //   });
-    // }
-
     callData = await this.encodeExecute({
       target: detailsForUserOp.target,
       value,
       data: detailsForUserOp.data,
     });
 
-    const callGasLimit =
-      detailsForUserOp.gasLimit ??
-      ((await this.provider.estimateGas({
-        from: this.entryPointAddress,
-        to: this.getAccountAddress(),
-        data: callData,
-      })) as BigNumberish);
+    const callGasLimit = detailsForUserOp.gasLimit
+      ? detailsForUserOp.gasLimit
+      : ((await this.provider.estimateGas({
+          from: this.entryPointAddress,
+          to: this.getAccountAddress(),
+          data: callData,
+        })) as BigNumberish);
 
     return {
       callData,
