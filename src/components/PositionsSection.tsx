@@ -53,7 +53,6 @@ export function PositionsSection() {
 
   const { connector, address, isConnected } = useAccount();
 
-
   const ankrProvider = new ethers.providers.JsonRpcProvider(
     "https://rpc.ankr.com/gnosis"
   );
@@ -94,6 +93,8 @@ export function PositionsSection() {
 
       let orderType: string;
       let price: string;
+      // let price: number;
+
       let tokenOutDecimals: number;
       let tokenInDecimals: number;
       let tokenOutSymbol: string;
@@ -116,6 +117,8 @@ export function PositionsSection() {
         price = (
           1 / Number(ethers.utils.formatUnits(limitOrderData.rate, "gwei"))
         ).toString(); //check this for decimals
+        // price =
+        //   1 / Number(ethers.utils.formatUnits(limitOrderData.rate, "gwei")); //check this for decimals
       } else if (limitOrderData.tokenIn === ethers.constants.AddressZero) {
         orderType = "Sell";
 
@@ -130,6 +133,7 @@ export function PositionsSection() {
         tokenOutSymbol = await tokenOutContract.symbol();
         tokenOutDecimals = await tokenOutContract.decimals();
 
+        // price = Number(ethers.utils.formatUnits(limitOrderData.rate, "gwei"));
         price = ethers.utils.formatUnits(limitOrderData.rate, "gwei");
       } else {
         console.log("unsupported pairing ignored");
@@ -144,6 +148,29 @@ export function PositionsSection() {
         orderStatus = "Cancelled";
       } else orderStatus = "Open";
 
+      console.log("limit order info");
+      limitOrderData.forEach((element: any) => {
+        console.log(ethers.utils.formatEther(element) || element);
+      });
+
+      function roundToNearestDecimalPlace(num: number): number {
+        const numberOfDecimals = Math.ceil(-Math.log10(Math.abs(num)));
+        return parseFloat(num.toFixed(numberOfDecimals));
+      }
+
+      const amount = roundToNearestDecimalPlace(
+        Number(price) /
+          Number(ethers.utils.formatEther(limitOrderData.orderAmount)) /
+          10 ** 8
+      ).toString();
+
+      // const filledAmount = formatNumber(
+      //   roundToNearestDecimalPlace(
+      //     Number(limitOrderData.filledAmount) / Number(amount)
+      //   ).toString(),
+      //   3
+      // );
+
       const limitOrderFormatted: LimitOrder = {
         pair:
           orderType === "Buy"
@@ -151,17 +178,9 @@ export function PositionsSection() {
             : `${tokenOutSymbol}/${tokenInSymbol}`,
         type: orderType,
         price: formatNumber(price, 4),
-        amount: formatNumber(
-          ethers.utils.formatEther(limitOrderData.orderAmount),
-          4
-        ),
-        total: formatNumber(
-          (
-            Number(price) *
-            Number(ethers.utils.formatEther(limitOrderData.orderAmount))
-          ).toString(),
-          4
-        ),
+        // price: price.toFixed(4),
+        amount: amount,
+        total: (Number(price) * Number(amount)).toString(),
         filled: formatNumber(
           limitOrderData.filledAmount
             .div(limitOrderData.orderAmount)
@@ -223,20 +242,19 @@ export function PositionsSection() {
         idsToCancel.push(order.id);
       }
     });
-    
+
     console.log("idsToCancel:", idsToCancel);
-    
-    const func : BytesLike[] = [];
-    const dest : string[] = [];
+
+    const func: BytesLike[] = [];
+    const dest: string[] = [];
     idsToCancel.forEach(async (id) => {
       func.push(await provider.smartAccountAPI.encodeCancelLimitOrder(id));
       dest.push(address as string);
     });
     console.log("func:", func);
-    console.log("func.length:", func.length)
-    console.log("address:", address)    
+    console.log("func.length:", func.length);
+    console.log("address:", address);
     console.log("dest:", dest);
-    
 
     const limitOrderContract = new ethers.Contract(
       address as string,
