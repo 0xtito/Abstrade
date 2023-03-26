@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { ethers } from "ethers";
 import { Event } from "ethers/lib/ethers";
 import { useAccount } from "wagmi";
+import { Connector } from "wagmi";
 
 import LimitOrderAccountJSON from "../contracts/artifacts/LimitOrderAccount.json";
 // import { limitOrderAccountAddress } from "../utils/constants";
@@ -10,12 +11,13 @@ const WebSocketUrl = process.env.NEXT_PUBLIC_GNOSIS_MAINNET_WS_URL!;
 export const useOrderFulfilledListener = (
   smartAccountAddress: string,
   setOrderFulfilled: React.Dispatch<React.SetStateAction<boolean>>,
-  setTx: React.Dispatch<React.SetStateAction<string>>
+  setTx: React.Dispatch<React.SetStateAction<string>>,
+  connector: Connector<any, any, any> | undefined
 ) => {
-  const { connector, isConnected } = useAccount();
+  // const { connector, isConnected } = useAccount();
 
   useEffect(() => {
-    if (!isConnected || !connector) return;
+    if (!connector) return;
 
     const provider = new ethers.providers.WebSocketProvider(WebSocketUrl);
     const contract = new ethers.Contract(
@@ -60,5 +62,5 @@ export const useOrderFulfilledListener = (
     return () => {
       contract.off("OrderFilled", onOrderFilled);
     };
-  }, [isConnected]);
+  }, []);
 };
