@@ -3,6 +3,7 @@ import React, { forwardRef, ForwardedRef } from "react";
 import Image from "next/image";
 import { Divider } from "../components";
 import AbstradeLogo from "../static/images/abstrade-v2-white-letters-no-background.png";
+import { useDisconnect } from "wagmi";
 
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 
@@ -17,6 +18,8 @@ export function WideSidebar(props: SidebarNavigationProps) {
     mainNavigation,
     userSettingsNav,
   } = props;
+  const { disconnect } = useDisconnect();
+
   return (
     <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col ">
       <div className="flex flex-grow flex-col overflow-y-auto border-r bg-gray-800 border-gray-800">
@@ -72,7 +75,7 @@ export function WideSidebar(props: SidebarNavigationProps) {
             </nav>
             <Divider />
             {/* Items below Divider */}
-            <nav className="flex-1 space-y-1 p-2">
+            <nav className="flex-1 space-y-1 p-2 cursor-pointer">
               {sidebarNavigation
                 .filter(
                   (fullBar_item) =>
@@ -81,16 +84,18 @@ export function WideSidebar(props: SidebarNavigationProps) {
                     }) > -1
                 )
                 .map((item) => (
-                  <a
+                  <div
                     key={item.name}
-                    onClick={() =>
+                    onClick={() => {
+                      if (item.name == "Log Out") {
+                        disconnect();
+                      }
                       handleSideBarToggle({
                         item,
                         sidebarNavigation,
                         setSidebarNavigation,
-                      })
-                    }
-                    href={item.href}
+                      });
+                    }}
                     className={classNames(
                       item.current
                         ? "bg-gray-900 text-white"
@@ -108,7 +113,7 @@ export function WideSidebar(props: SidebarNavigationProps) {
                       aria-hidden="true"
                     />
                     {item.name}
-                  </a>
+                  </div>
                 ))}
             </nav>
           </div>

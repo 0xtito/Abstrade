@@ -100,7 +100,7 @@ export function OrderSection({
             type="button"
             className={classNames(
               !isSell
-                ? "relative inline-flex items-center rounded-l-md bg-green-300 px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 focus:z-10"
+                ? "relative inline-flex items-center rounded-l-md bg-slate-200 px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 focus:z-10"
                 : "relative inline-flex items-center rounded-l-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-10"
             )}
             onClick={() => setIsSell(false)}
@@ -112,7 +112,7 @@ export function OrderSection({
             type="button"
             className={classNames(
               isSell
-                ? "relative inline-flex -ml-px items-center rounded-r-md bg-red-300 px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 focus:z-10"
+                ? "relative inline-flex -ml-px items-center rounded-r-md bg-slate-200 px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 focus:z-10"
                 : "relative inline-flex -ml-px items-center rounded-r-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-10"
             )}
             onClick={() => setIsSell(true)}
@@ -142,10 +142,11 @@ export function OrderSection({
       <button
         type="button"
         onClick={handleSubmit}
-        className="mt-6 w-full px-4 py-2 font-semibold text-white bg-logo-blue rounded-lg shadow-md hover:bg-blue-500 focus:bg-blue-700 focus:ring-logo-blue focus:ring-opacity-75"
+        className="mt-6 w-full px-4 py-2 font-semibold text-white bg-indigo-600 rounded-lg shadow-md hover:bg-indigo-900 focus:bg-blue-700 focus:ring-logo-blue focus:ring-opacity-75"
       >
         {isSell ? "Submit Sell Order" : "Submit Buy Order"}
       </button>
     </div>
   );
 }
+// text-indigo-600 hover:text-indigo-900

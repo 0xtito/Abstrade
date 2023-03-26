@@ -15,6 +15,7 @@ import { AASigner } from "../interfaces/AASigner";
 import LimitOrderAccount from "../contracts/artifacts/LimitOrderAccount.json";
 import { MainPageContext } from "../contexts/MainPageContext";
 import { useWaitForTransaction } from "wagmi";
+import { Spinner } from "./Spinner";
 
 import { assetContractAddresses } from "../utils/constants";
 
@@ -37,17 +38,25 @@ export function ConfirmOrderModal(props: ConfirmOrderProps) {
 
   const { open, setOpen, orderInfo, setConfirmed, isSell, setTx } = props;
   const [token, xDai] = orderInfo.pair.split("/");
+  const [showLoading, setShowLoading] = useState(false);
 
   const tokenAddress =
     assetContractAddresses[token as keyof typeof assetContractAddresses];
 
   const xDaiAddress = ethers.constants.AddressZero;
 
-  console.log(tokenAddress);
   const cancelButtonRef = useRef(null);
 
+  const formatNumber = (str: string | number, dig: number) => {
+    const num = Number(str);
+    if (num >= (10 ^ (dig - 1))) {
+      return Math.round(num).toString();
+    } else {
+      return num.toPrecision(dig);
+    }
+  };
+
   const handleValueShown = (key: string) => {
-    console.log(key);
     switch (key) {
       case "pair":
         return "";
@@ -71,9 +80,6 @@ export function ConfirmOrderModal(props: ConfirmOrderProps) {
     const provider: AAProvider = await connector.getProvider();
     const ogProvider = provider.originalProvider;
     const signer: AASigner = await connector?.getSigner();
-    // // signing with the ogSigner, not the AASigner - there are some bugs in the AASigner that aren't a priority to fix right now
-    const ogSigner = signer.originalSigner;
-    console.log(provider.smartAccountAPI.isPhantom);
     /**
      * Depending on lee's test, we will just set the userOp's gasLimit to 0 (not using bundler)
      * @note for now, we will just let it work as in
@@ -88,12 +94,6 @@ export function ConfirmOrderModal(props: ConfirmOrderProps) {
         orderAmount: BigInt(orderInfo.total * 1e18),
         rate: BigInt(Math.round(1e9 / orderInfo.price)), // ASK: why is this 1e9?
       });
-    console.log(`encoded create limit order: ${encodedCreateLimitOrder}`);
-
-    console.log(
-      `senderAccontAddress: ${await provider.getSenderAccountAddress()}`
-    );
-
     const isPhantom = provider.smartAccountAPI.isPhantom;
 
     //
@@ -174,66 +174,87 @@ export function ConfirmOrderModal(props: ConfirmOrderProps) {
             >
               <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white px-4 pt-5 pb-4 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
                 <div>
-                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-                    <CheckIcon
-                      className="h-6 w-6 text-green-600"
-                      aria-hidden="true"
-                    />
-                  </div>
-                  <div className="mt-3 text-center sm:mt-5">
-                    <Dialog.Title
-                      as="h3"
-                      className="text-base font-semibold leading-6 text-gray-900"
-                    >
-                      {`${isSell ? "Sell" : "Buy"} Order`}
-                    </Dialog.Title>
-                    <div className="mt-2">
-                      <p className="text-sm text-gray-500">
-                        By clicking confirm, your order will be placed on the
-                        Gnosis Chain.
-                      </p>
-                      <div className="bg-white shadow sm:rounded-lg mt-4 p-4">
-                        {Object.entries(orderInfo).map(
-                          ([key, value], index) => (
-                            <div
-                              key={index}
-                              className="flex justify-between items-center py-2"
-                            >
-                              <div className="text-sm font-semibold text-gray-700 capitalize">
-                                {key}
-                              </div>
-                              <div className="text-sm text-gray-500">
-                                {`${value} ${
-                                  handleValueShown(key) as string | number
-                                }`}
-                              </div>
+                  {!showLoading ? (
+                    <Fragment>
+                      {" "}
+                      <div>
+                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+                          <CheckIcon
+                            className="h-6 w-6 text-green-600"
+                            aria-hidden="true"
+                          />
+                        </div>
+                        <div className="mt-3 text-center sm:mt-5">
+                          <Dialog.Title
+                            as="h3"
+                            className="text-base font-semibold leading-6 text-gray-900"
+                          >
+                            {`${isSell ? "Sell" : "Buy"} Order`}
+                          </Dialog.Title>
+                          <div className="mt-2">
+                            <p className="text-sm text-gray-500">
+                              By clicking confirm, your order will be placed on
+                              the Gnosis Chain.
+                            </p>
+                            <div className="bg-white shadow sm:rounded-lg mt-4 p-4">
+                              {Object.entries(orderInfo).map(
+                                ([key, value], index) => (
+                                  <div
+                                    key={index}
+                                    className="flex justify-between items-center py-2"
+                                  >
+                                    <div className="text-sm font-semibold text-gray-700 capitalize">
+                                      {key}
+                                    </div>
+                                    <div className="text-sm text-gray-500">
+                                      {` ${
+                                        typeof value === "string"
+                                          ? value
+                                          : formatNumber(value, 4)
+                                      } ${
+                                        handleValueShown(key) as string | number
+                                      }`}
+                                    </div>
+                                  </div>
+                                )
+                              )}
                             </div>
-                          )
-                        )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
-                  <button
-                    type="button"
-                    className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:col-start-2"
-                    onClick={async () => {
-                      setConfirmed(true);
-                      await handleSubmitOrder();
-                      setOpen(false);
-                    }}
-                  >
-                    Confirm
-                  </button>
-                  <button
-                    type="button"
-                    className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:col-start-1 sm:mt-0"
-                    onClick={() => setOpen(false)}
-                    ref={cancelButtonRef}
-                  >
-                    Cancel
-                  </button>
+                      <div className="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
+                        <button
+                          type="button"
+                          className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 sm:col-start-2"
+                          onClick={async () => {
+                            setConfirmed(true);
+                            setShowLoading(true);
+                            await handleSubmitOrder();
+                            setOpen(false);
+                          }}
+                        >
+                          Confirm
+                        </button>
+                        <button
+                          type="button"
+                          className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:col-start-1 sm:mt-0"
+                          onClick={() => setOpen(false)}
+                          ref={cancelButtonRef}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </Fragment>
+                  ) : (
+                    <Fragment>
+                      <div className="flex flex-col items-center pt-10">
+                        <Spinner />
+                        <p className="mt-10 text-lg">
+                          Transaction processing now...
+                        </p>
+                      </div>
+                    </Fragment>
+                  )}
                 </div>
               </Dialog.Panel>
             </Transition.Child>

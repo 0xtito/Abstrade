@@ -52,9 +52,6 @@ export function WalletDropDown({ children }: { children: string }) {
                         close();
                       }}
                     >
-                      <a className="mt-1 flex h-11 w-11 items-center justify-center rounded-lg bg-gray-50 group-hover:bg-white">
-                        {findWalletIcon(item.name)}
-                      </a>
                       <div className="items-center">
                         <span className="font-semibold text-gray-900 items-center">
                           {item.name}

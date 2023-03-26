@@ -27,11 +27,12 @@ import { AAProvider } from "../interfaces/AAProvider";
 import { ethers } from "ethers";
 import { useOrderFulfilledListener } from "../hooks/useOrderFulfilledListener";
 import { useOrderCreatedListener } from "../hooks/useOrderCreatedListener";
+import Banner from "../components/Banner";
 
 const fullBarNav = mainNavigation.concat(userSettingsNav);
 
 export function DashboardLayout(props: DashboardLayoutProps) {
-  const { isConnected, connector } = useAccount();
+  const { isConnected, connector, address } = useAccount();
   // const userAddress = _address
   //   ? (_address as string) || ("" as string)
   //   : undefined; // hacky away to get around the type being `0x${string}'
@@ -49,23 +50,6 @@ export function DashboardLayout(props: DashboardLayoutProps) {
   const [tx, setTx] = useState<string>("");
   const [orderCreated, setOrderCreated] = useState<boolean>(false);
   const [orderFulfilled, setOrderFulfilled] = useState<boolean>(false);
-
-  // useEffect for initilizing the listeners for all active orders
-  useEffect(() => {
-    if (!isConnected || !connector) return;
-    const init = async () => {
-      const provider: AAProvider = await connector.getProvider();
-      const address = await provider.smartAccountAPI.getAccountAddress();
-
-      useOrderFulfilledListener(address, setOrderFulfilled, setTx);
-      useOrderCreatedListener(address, setOrderCreated, setTx);
-
-      // const receipt = await wsProvider.waitForTransaction();
-    };
-  }, [isConnected]);
-
-  // useEffect for adding a new order to the list of active orders
-  useEffect(() => {}, [confirmed]);
 
   const onSubmit = (
     pair: string,
@@ -91,13 +75,14 @@ export function DashboardLayout(props: DashboardLayoutProps) {
         />
       )}
       {/* Order FulfilledNotification */}
-      {(orderCreated || orderFulfilled) && orderCreated ? (
+      {orderCreated && (
         <Notification
           orderCreated={orderCreated}
           setOrderCreated={setOrderCreated}
           tx={tx}
         />
-      ) : (
+      )}
+      {orderFulfilled && (
         <Notification
           orderFulfilled={orderFulfilled}
           setOrderFulfilled={setOrderFulfilled}
@@ -187,41 +172,19 @@ export function DashboardLayout(props: DashboardLayoutProps) {
               <Bars3BottomLeftIcon className="h-6 w-6" aria-hidden="true" />
             </button>
             <div className="flex flex-1 justify-between px-4 sm:px-6">
-              <div className="flex flex-1">
-                <form className="flex w-full lg:ml-0" action="#" method="GET">
-                  <label htmlFor="search-field" className="sr-only">
-                    Search
-                  </label>
-                  <div className="relative w-full text-gray-400 focus-within:text-gray-600">
-                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center">
-                      <MagnifyingGlassIcon
-                        className="h-5 w-5"
-                        aria-hidden="true"
-                      />
-                    </div>
-                    <input
-                      id="search-field"
-                      className="block h-full w-full border-transparent py-2 pl-8 pr-3 text-gray-900 focus:border-transparent focus:outline-none focus:ring-0 focus:placeholder:text-gray-400 sm:text-sm"
-                      placeholder="Search"
-                      type="search"
-                      name="search"
-                    />
-                  </div>
-                </form>
-              </div>
+              <div className="flex flex-1"></div>
               <div className="ml-4 flex items-center lg:ml-6">
                 <button
                   type="button"
                   className="rounded-full bg-white p-1 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                >
-                  <span className="sr-only">View notifications</span>
-                  <BellIcon className="h-6 w-6" aria-hidden="true" />
-                </button>
+                ></button>
 
                 <WalletDropDown />
               </div>
             </div>
           </div>
+          <Banner />
+
           <div className="relative z-0 flex flex-1 overflow-hidden p-6 ">
             <main className="relative z-0 flex-1 overflow-y-auto focus:outline-none pr-4">
               {props.children}
