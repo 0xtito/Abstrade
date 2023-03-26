@@ -99,12 +99,32 @@ export function ConfirmOrderModal(props: ConfirmOrderProps) {
     });
     console.log(`signed user op: ${signedUserOp}`);
 
-    // hard coding tx gas settings for now
-    const GAS_SETTINGS = {
-      gasLimit: 15000000, // 1000000 failed when creating limit order + create account
-      maxFeePerGas: ethers.utils.parseUnits("10", "gwei"),
-      maxPriorityFeePerGas: ethers.utils.parseUnits("1", "gwei"),
+    const { maxFeePerGas, maxPriorityFeePerGas } =
+      await ogProvider.getFeeData();
+
+    console.log(`maxFeePerGas: ${maxFeePerGas}`);
+    console.log(ethers.utils.parseUnits("10", "gwei"));
+    console.log(`maxPriorityFeePerGas: ${maxPriorityFeePerGas}`);
+
+    const isPhantom = provider.smartAccountAPI.isPhantom;
+    let GAS_SETTINGS = {
+      gasLimit: 20000000,
+      maxFeePerGas: maxFeePerGas
+        ? maxFeePerGas
+        : ethers.utils.parseUnits("15", "gwei"),
+      maxPriorityFeePerGas: maxPriorityFeePerGas
+        ? maxPriorityFeePerGas
+        : ethers.utils.parseUnits("1", "gwei"),
     };
+
+    if (isPhantom) {
+      GAS_SETTINGS = {
+        gasLimit: 20000000 * 2, // 1000000 failed when creating limit order + create account
+        maxFeePerGas: GAS_SETTINGS.maxFeePerGas.mul(3),
+        maxPriorityFeePerGas: GAS_SETTINGS.maxPriorityFeePerGas,
+      };
+    }
+    // hard coding tx gas settings for now
 
     // const ankrProvider = new ethers.providers.JsonRpcProvider('https://rpc.ankr.com/gnosis');
     const relayerSigner = new ethers.Wallet(
