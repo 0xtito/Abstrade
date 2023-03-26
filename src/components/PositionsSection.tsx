@@ -41,13 +41,17 @@ const GAS_SETTINGS = {
 };
 
 export function PositionsSection() {
+  const [selectedPositionAsset, setSelectedPositionAsset] = useState({
+    id: 0,
+    name: "All",
+    symbol: "",
+  });
   const [limitOrders, setLimitOrders] = useState<LimitOrder[]>([]);
   const [displayOrderType, setDisplayOrderType] = React.useState<{
     name: string;
   }>(tabs[0]);
 
   const { connector, address, isConnected } = useAccount();
-
 
   const ankrProvider = new ethers.providers.JsonRpcProvider(
     "https://rpc.ankr.com/gnosis"
@@ -62,7 +66,6 @@ export function PositionsSection() {
   }, [isConnected]);
 
   const getLimitOrders = async () => {
-
     console.log("getting limit orders");
 
     const provider: AAProvider = await connector?.getProvider();
@@ -81,10 +84,8 @@ export function PositionsSection() {
     const _limitOrders: LimitOrder[] = [];
     //set limit to 100 for now to prevent unbounded loop
     for (let i = 1; i < 50; i++) {
-
       const limitOrderData = await limitOrderAccount.limitOrders(i);
       console.log(i, limitOrderData);
-
 
       // break loop once we get past end of orders
       if (Number(limitOrderData.orderAmount) === 0) {
@@ -179,7 +180,6 @@ export function PositionsSection() {
   };
 
   const cancelLimitOrder = async (e: any) => {
-
     console.log("cancelling orderId...", e.target.id);
     const provider: AAProvider = await connector?.getProvider();
     const signer: AASigner = await connector?.getSigner();
@@ -220,12 +220,20 @@ export function PositionsSection() {
         idsToCancel.push(order.id);
       }
     });
-
-    const dest: BytesLike[] = [];
+    
+    console.log("idsToCancel:", idsToCancel);
+    
+    const func : BytesLike[] = [];
+    const dest : string[] = [];
     idsToCancel.forEach(async (id) => {
-      dest.push(await provider.smartAccountAPI.encodeCancelLimitOrder(id));
+      func.push(await provider.smartAccountAPI.encodeCancelLimitOrder(id));
+      dest.push(address as string);
     });
-    const func = new Array(dest.length).fill(address);
+    console.log("func:", func);
+    console.log("func.length:", func.length)
+    console.log("address:", address)    
+    console.log("dest:", dest);
+    
 
     const limitOrderContract = new ethers.Contract(
       address as string,
@@ -237,6 +245,8 @@ export function PositionsSection() {
       "executeBatch",
       [dest, func]
     );
+
+    console.log("userOpCalldata:", userOpCalldata);
 
     const entryPointContract = new ethers.Contract(
       "0x0576a174D229E3cFA37253523E645A78A0C91B57",
@@ -260,6 +270,8 @@ export function PositionsSection() {
 
     const signedUserOp = await provider.smartAccountAPI.signUserOp(userOp);
 
+    console.log("signedUserOp:", signedUserOp);
+
     const tx = await provider.smartAccountAPI.entryPointView
       .connect(relayerSigner)
       .handleOps([signedUserOp], relayerSigner.address, GAS_SETTINGS);
@@ -278,7 +290,7 @@ export function PositionsSection() {
   };
 
   return (
-    <div className="px-4 py-8">
+    <div className="px-4 py-8 h-fit pb-20">
       <div>
         <div className="sm:hidden">
           <label htmlFor="tabs" className="sr-only">
@@ -323,7 +335,10 @@ export function PositionsSection() {
             ))}
           </nav>
           <div className="w-fit">
-            <AssetPositionDropdown></AssetPositionDropdown>
+            <AssetPositionDropdown
+              selectedPositionAsset={selectedPositionAsset}
+              setSelectedPositionAsset={setSelectedPositionAsset}
+            />
           </div>
         </div>
       </div>
@@ -338,7 +353,7 @@ export function PositionsSection() {
                       scope="col"
                       className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                     >
-                      Pair
+                      Positions
                     </th>
                     <th
                       scope="col"
@@ -399,7 +414,12 @@ export function PositionsSection() {
                         displayOrderType.name === "All" ||
                         order.status === displayOrderType.name
                       ) {
-                        return true;
+                        if (
+                          selectedPositionAsset.name === "All" ||
+                          order.pair.includes(selectedPositionAsset.name)
+                        ) {
+                          return true;
+                        }
                       }
                       return false;
                     })
@@ -412,7 +432,7 @@ export function PositionsSection() {
                         className={order.status !== "Open" ? "bg-gray-300" : ""}
                       >
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          {order.pair}
+                          {order.pair} - {order.id}
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                           {order.type}
