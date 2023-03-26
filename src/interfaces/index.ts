@@ -221,9 +221,7 @@ export interface BarNavItem {
 }
 
 export interface SidebarNavigationProps {
-  sidebarExpanded: boolean;
   sidebarNavigation: BarNavItem[];
-  setSidebarExpanded: React.Dispatch<React.SetStateAction<boolean>>;
   mainNavigation: BarNavItem[];
   userSettingsNav: BarNavItem[];
   setSidebarNavigation: React.Dispatch<

@@ -27,7 +27,7 @@ export function WalletDropDown() {
   return (
     <Menu as="div" className="relative ml-3">
       <div>
-        <Menu.Button className="flex max-w-xs items-center rounded-lg p-2 px-4 bg-sky-500 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:ring-offset-2">
+        <Menu.Button className="flex max-w-xs items-center rounded-lg p-2 px-4 bg-indigo-600 hover:bg-indigo-900 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:ring-offset-2">
           <span className="sr-only">Wallet</span>
           <p className="">{isConnected ? userAddress : "Connect"}</p>
         </Menu.Button>

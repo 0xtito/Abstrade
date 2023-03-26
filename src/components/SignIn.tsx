@@ -1,6 +1,6 @@
 import { useAccount, useConnect } from "wagmi";
 import { Fragment, useEffect } from "react";
-import { WalletDropDown } from "./MyWalletDropDown";
+import { WalletDropDown } from "./FrontPageWalletDropDown";
 import {
   GoogleLogo,
   FacebookLogo,
@@ -31,14 +31,8 @@ export function SignIn() {
             alt="Your Company"
           /> */}
           <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
-            A new era for web3 trading:
+            A new era of Trading
           </h2>
-          <div className="flex mt-2 text-center text-sm text-gray-600 focus:border-collapse justify-center">
-            Or
-            <span className="ml-1 inline-block focus:border-collapse">
-              <WalletDropDown>create your smart account</WalletDropDown>
-            </span>
-          </div>
         </div>
         <div className="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80">
           <svg
