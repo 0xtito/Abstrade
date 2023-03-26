@@ -53,6 +53,7 @@ export function PositionsSection() {
 
   const { connector, address, isConnected } = useAccount();
 
+
   const ankrProvider = new ethers.providers.JsonRpcProvider(
     "https://rpc.ankr.com/gnosis"
   );
@@ -76,7 +77,6 @@ export function PositionsSection() {
 
     const limitOrderAccount = new ethers.Contract(
       address as string,
-
       LimitOrderAccountABI.abi,
       signer
     );
@@ -182,12 +182,10 @@ export function PositionsSection() {
   const cancelLimitOrder = async (e: any) => {
     console.log("cancelling orderId...", e.target.id);
     const provider: AAProvider = await connector?.getProvider();
-    const signer: AASigner = await connector?.getSigner();
 
-    const limitOrderAccount = new ethers.Contract(
-      address as string,
-      LimitOrderAccountABI.abi,
-      signer
+    const relayerSigner = new ethers.Wallet(
+      process.env.NEXT_PUBLIC_RELAYER_KEY!,
+      provider
     );
 
     const encodedCancelLimitOrder =
@@ -214,6 +212,11 @@ export function PositionsSection() {
   const cancelAllLimitOrders = async () => {
     const idsToCancel: number[] = [];
     const provider: AAProvider = await connector?.getProvider();
+
+    const relayerSigner = new ethers.Wallet(
+      process.env.NEXT_PUBLIC_RELAYER_KEY!,
+      provider
+    );
 
     limitOrders.forEach((order) => {
       if (order.status === "Open") {
