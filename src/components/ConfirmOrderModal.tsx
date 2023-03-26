@@ -83,7 +83,7 @@ export function ConfirmOrderModal(props: ConfirmOrderProps) {
         tokenIn: isSell ? xDaiAddress : tokenAddress,
         expiry:
           (await provider.getBlock(await provider.getBlockNumber())).timestamp +
-          3600, // default value for now (1 hour)
+          50_000, // default value for now (1 hour)
         orderAmount: BigInt(orderInfo.amount * 1e18),
         rate: BigInt(Math.round(1e9 / orderInfo.price)), // ASK: why is this 1e9?
       });
@@ -93,22 +93,21 @@ export function ConfirmOrderModal(props: ConfirmOrderProps) {
       `senderAccontAddress: ${await provider.getSenderAccountAddress()}`
     );
 
+    const isPhantom = provider.smartAccountAPI.isPhantom;
+
+    //
     const signedUserOp = await provider.smartAccountAPI.createSignedUserOp({
       target: await provider.getSenderAccountAddress(),
       data: encodedCreateLimitOrder,
+      gasLimit: isPhantom ? 100_000 : undefined,
     });
     console.log(`signed user op: ${signedUserOp}`);
 
     const { maxFeePerGas, maxPriorityFeePerGas } =
       await ogProvider.getFeeData();
 
-    console.log(`maxFeePerGas: ${maxFeePerGas}`);
-    console.log(ethers.utils.parseUnits("10", "gwei"));
-    console.log(`maxPriorityFeePerGas: ${maxPriorityFeePerGas}`);
-
-    const isPhantom = provider.smartAccountAPI.isPhantom;
     let GAS_SETTINGS = {
-      gasLimit: 20000000,
+      gasLimit: 1_000_000,
       maxFeePerGas: maxFeePerGas
         ? maxFeePerGas
         : ethers.utils.parseUnits("15", "gwei"),
@@ -119,7 +118,7 @@ export function ConfirmOrderModal(props: ConfirmOrderProps) {
 
     if (isPhantom) {
       GAS_SETTINGS = {
-        gasLimit: 20000000 * 2, // 1000000 failed when creating limit order + create account
+        gasLimit: GAS_SETTINGS.gasLimit * 3, // 1000000 failed when creating limit order + create account
         maxFeePerGas: GAS_SETTINGS.maxFeePerGas.mul(3),
         maxPriorityFeePerGas: GAS_SETTINGS.maxPriorityFeePerGas,
       };
