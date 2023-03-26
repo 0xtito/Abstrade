@@ -164,13 +164,6 @@ export function PositionsSection() {
           10 ** 8
       ).toString();
 
-      // const filledAmount = formatNumber(
-      //   roundToNearestDecimalPlace(
-      //     Number(limitOrderData.filledAmount) / Number(amount)
-      //   ).toString(),
-      //   3
-      // );
-
       const limitOrderFormatted: LimitOrder = {
         pair:
           orderType === "Buy"
@@ -180,7 +173,7 @@ export function PositionsSection() {
         price: formatNumber(price, 4),
         // price: price.toFixed(4),
         amount: amount,
-        total: (Number(price) * Number(amount)).toString(),
+        total: formatNumber((Number(price) * Number(amount)).toString(), 4),
         filled: formatNumber(
           limitOrderData.filledAmount
             .div(limitOrderData.orderAmount)
@@ -304,7 +297,7 @@ export function PositionsSection() {
   const formatNumber = (str: string, dig: number) => {
     const num = Number(str);
     if (num >= (10 ^ (dig - 1))) {
-      return Math.round(num).toString();
+      return (Math.round(num*1000)/1000).toString();
     } else {
       return num.toPrecision(dig);
     }
@@ -453,7 +446,7 @@ export function PositionsSection() {
                         className={order.status !== "Open" ? "bg-gray-300" : ""}
                       >
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          {order.pair} - {order.id}
+                          {order.pair}
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                           {order.type}
