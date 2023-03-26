@@ -161,7 +161,7 @@ export function PositionsSection() {
       const amount = roundToNearestDecimalPlace(
         Number(price) /
           Number(ethers.utils.formatEther(limitOrderData.orderAmount)) /
-          10 ** 10
+          10 ** 8
       ).toString();
 
       // const filledAmount = formatNumber(
