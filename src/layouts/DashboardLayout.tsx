@@ -42,6 +42,7 @@ export function DashboardLayout(props: DashboardLayoutProps) {
     total: 0,
   });
   const sidebar = createRef();
+  const [tx, setTx] = useState("");
 
   // useEffect for initilizing the listeners for all active orders
   useEffect(() => {
@@ -85,6 +86,7 @@ export function DashboardLayout(props: DashboardLayoutProps) {
           open={openModal}
           setConfirmed={setConfirmed}
           isSell={isSell}
+          setTx={setTx}
         />
       )}
       <div>

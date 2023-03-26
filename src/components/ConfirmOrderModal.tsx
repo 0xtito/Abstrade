@@ -29,12 +29,13 @@ interface ConfirmOrderProps {
   };
   setConfirmed: Dispatch<SetStateAction<boolean>>;
   isSell: boolean;
+  setTx: Dispatch<SetStateAction<string>>;
 }
 
 export function ConfirmOrderModal(props: ConfirmOrderProps) {
   const { connector, address } = useAccount();
 
-  const { open, setOpen, orderInfo, setConfirmed, isSell } = props;
+  const { open, setOpen, orderInfo, setConfirmed, isSell, setTx } = props;
   const [token, xDai] = orderInfo.pair.split("/");
 
   const tokenAddress =
@@ -84,7 +85,7 @@ export function ConfirmOrderModal(props: ConfirmOrderProps) {
         expiry:
           (await provider.getBlock(await provider.getBlockNumber())).timestamp +
           50_000, // default value for now (1 hour)
-        orderAmount: BigInt(orderInfo.amount * 1e18),
+        orderAmount: BigInt(orderInfo.total * 1e18),
         rate: BigInt(Math.round(1e9 / orderInfo.price)), // ASK: why is this 1e9?
       });
     console.log(`encoded create limit order: ${encodedCreateLimitOrder}`);
@@ -135,6 +136,7 @@ export function ConfirmOrderModal(props: ConfirmOrderProps) {
       .connect(relayerSigner) // pretty sure we can connect our filler here instead of the signer
       .handleOps([signedUserOp], relayerSigner.address, GAS_SETTINGS);
     console.log(`tx sent: ${tx.hash}`);
+    setTx(tx.hash);
     const receipt = await tx.wait();
     console.log(`tx confirmed: ${receipt.transactionHash}`);
   };
