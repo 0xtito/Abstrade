@@ -83,7 +83,7 @@ export function PositionsSection() {
     //set limit to 100 for now to prevent unbounded loop
     for (let i = 1; i < 100; i++) {
       const limitOrderData = await limitOrderAccount.limitOrders(i);
-/*  dummy test data
+      /*  dummy test data
       const limitOrderData = {
         orderAmount: ethers.BigNumber.from("1000"),
         filledAmount: ethers.BigNumber.from("500"),
@@ -151,7 +151,11 @@ export function PositionsSection() {
 
       let orderStatus: string;
 
-      if (limitOrderData.amount <= limitOrderData.filled) {
+      if (
+        Number(ethers.utils.formatEther(limitOrderData.filled)) /
+          Number(ethers.utils.formatEther(limitOrderData.amount)) >
+        0.99
+      ) {
         orderStatus = "Fulfilled";
       } else if (limitOrderData.expiry < Date.now() / 1000) {
         orderStatus = "Cancelled";
@@ -178,9 +182,14 @@ export function PositionsSection() {
         // price: price.toFixed(4),
         amount: amount,
         total: formatNumber((Number(price) * Number(amount)).toString(), 4),
-        filled:
-          formatNumber(((Number(ethers.utils.formatEther(limitOrderData.filledAmount))/
-          Number(ethers.utils.formatEther(limitOrderData.orderAmount)))*100).toString(), 3),
+        filled: formatNumber(
+          (
+            (Number(ethers.utils.formatEther(limitOrderData.filledAmount)) /
+              Number(ethers.utils.formatEther(limitOrderData.orderAmount))) *
+            100
+          ).toString(),
+          3
+        ),
         expiry: new Date(Number(limitOrderData.expiry) * 1000).toDateString(),
         status: orderStatus,
         id: i,
@@ -297,7 +306,7 @@ export function PositionsSection() {
   const formatNumber = (str: string, dig: number) => {
     const num = Number(str);
     if (num >= (10 ^ (dig - 1))) {
-      return (Math.round(num*1000)/1000).toString();
+      return (Math.round(num * 1000) / 1000).toString();
     } else {
       return num.toPrecision(dig);
     }
