@@ -55,7 +55,6 @@ const connectors = [
           : chains[0].rpcUrls.default.http[0],
     },
   }),
-  new MetaMaskConnector({ chains }),
 ];
 
 export const client = createClient({
