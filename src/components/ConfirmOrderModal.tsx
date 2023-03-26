@@ -68,6 +68,7 @@ export function ConfirmOrderModal(props: ConfirmOrderProps) {
     }
 
     const provider: AAProvider = await connector.getProvider();
+    const ogProvider = provider.originalProvider;
     const signer: AASigner = await connector?.getSigner();
     // // signing with the ogSigner, not the AASigner - there are some bugs in the AASigner that aren't a priority to fix right now
     const ogSigner = signer.originalSigner;
@@ -100,21 +101,20 @@ export function ConfirmOrderModal(props: ConfirmOrderProps) {
 
     // hard coding tx gas settings for now
     const GAS_SETTINGS = {
-      gasLimit: 1500000, // 1000000 failed when creating limit order + create account
+      gasLimit: 15000000, // 1000000 failed when creating limit order + create account
       maxFeePerGas: ethers.utils.parseUnits("10", "gwei"),
       maxPriorityFeePerGas: ethers.utils.parseUnits("1", "gwei"),
     };
 
-    const ankrProvider = new ethers.providers.JsonRpcProvider('https://rpc.ankr.com/gnosis');
-    const relayerSigner = new ethers.Wallet(process.env.NEXT_PUBLIC_RELAYER_KEY!, ankrProvider); 
+    // const ankrProvider = new ethers.providers.JsonRpcProvider('https://rpc.ankr.com/gnosis');
+    const relayerSigner = new ethers.Wallet(
+      process.env.NEXT_PUBLIC_RELAYER_KEY!,
+      ogProvider
+    );
 
     const tx = await provider.smartAccountAPI.entryPointView
-      .connect(ogSigner) // pretty sure we can connect our filler here instead of the signer
-      .handleOps(
-        [signedUserOp],
-        relayerSigner.address,
-        GAS_SETTINGS
-      );
+      .connect(relayerSigner) // pretty sure we can connect our filler here instead of the signer
+      .handleOps([signedUserOp], relayerSigner.address, GAS_SETTINGS);
     console.log(`tx sent: ${tx.hash}`);
     const receipt = await tx.wait();
     console.log(`tx confirmed: ${receipt.transactionHash}`);
